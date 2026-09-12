@@ -1,0 +1,21 @@
+# Dipendenze e build
+node_modules/
+.next/
+out/
+coverage/
+generated/
+prisma/generated/
+tsconfig.tsbuildinfo
+
+# Segreti: mai versionati
+.env
+.env.local
+.env.*.local
+
+# Dati e log di sviluppo locale
+work/
+outputs/
+*.log
+
+# Sistema operativo
+.DS_Store

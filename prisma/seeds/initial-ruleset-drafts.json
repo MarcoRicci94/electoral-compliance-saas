@@ -1,0 +1,63 @@
+{
+  "status": "LEGAL_REVIEW_REQUIRED",
+  "rulesets": [
+    {
+      "name": "Italia — Politiche — bozza iniziale",
+      "jurisdiction": "ITALY_BASE",
+      "electionType": "POLITICAL",
+      "version": "draft-2026-08",
+      "rules": [
+        {
+          "ruleCode": "IT-POL-SCOPE-001",
+          "conditionExpression": {
+            "all": [
+              { "field": "campaign.electionType", "operator": "eq", "value": "POLITICAL" },
+              { "field": "campaign.officeSought", "operator": "in", "value": ["DEPUTY", "SENATOR"] }
+            ]
+          },
+          "effectType": "INFORMATION"
+        },
+        {
+          "ruleCode": "IT-POL-MAND-002",
+          "conditionExpression": { "field": "mandatary.activeCount", "operator": "gt", "value": 1 },
+          "effectType": "BLOCKER"
+        },
+        {
+          "ruleCode": "IT-POL-REPORT-001",
+          "conditionExpression": {
+            "field": "campaign.electionType",
+            "operator": "eq",
+            "value": "POLITICAL"
+          },
+          "effectType": "REQUIREMENT"
+        }
+      ]
+    },
+    {
+      "name": "Italia — Comunali — bozza iniziale",
+      "jurisdiction": "ITALY_BASE",
+      "electionType": "MUNICIPAL",
+      "version": "draft-2026-08",
+      "rules": [
+        {
+          "ruleCode": "IT-COM-SCOPE-002",
+          "conditionExpression": {
+            "field": "election.population",
+            "operator": "gt",
+            "value": 15000
+          },
+          "effectType": "INFORMATION"
+        },
+        {
+          "ruleCode": "IT-COM-LOCAL-001",
+          "conditionExpression": {
+            "field": "municipalLocalRules.status",
+            "operator": "eq",
+            "value": "NOT_YET_VERIFIED"
+          },
+          "effectType": "TASK"
+        }
+      ]
+    }
+  ]
+}
