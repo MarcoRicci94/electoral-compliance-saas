@@ -7,6 +7,7 @@ import {
   type Prisma
 } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { resolveDemographics, type Demographics } from "@/modules/rules/demographics";
 import { formatLegalDate } from "@/modules/rules/legal-calendar";
 
 /**
@@ -60,6 +61,13 @@ export type CampaignRuleContext = {
     registeredVoters?: number;
     hasVerifiedSource: boolean;
   };
+  /**
+   * Popolazione ed elettori iscritti gia' risolti fra elezione e territorio, con
+   * l'indicazione della fonte di ciascun valore. Le regole devono leggere qui, non
+   * da `election` o `territory`, cosi' la precedenza fra le fonti e' decisa in un
+   * posto solo.
+   */
+  demographics: Demographics;
   mandatary: {
     exists: boolean;
     status?: string;
@@ -274,6 +282,22 @@ function assemble(
       registeredVoters: optionalNumber(territory?.registeredVoters),
       hasVerifiedSource: Boolean(territory?.sourceVerifiedAt)
     },
+    demographics: resolveDemographics(
+      election
+        ? {
+            population: election.population,
+            registeredVoters: election.registeredVoters,
+            isVerified: Boolean(election.sourceVerifiedAt)
+          }
+        : null,
+      territory
+        ? {
+            population: territory.population,
+            registeredVoters: territory.registeredVoters,
+            isVerified: Boolean(territory.sourceVerifiedAt)
+          }
+        : null
+    ),
     mandatary: {
       exists: mandatary !== null,
       status: mandatary?.status,

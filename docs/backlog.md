@@ -40,6 +40,11 @@ Fatto:
   normative, parametri versionati ed effetti completi. Il caricatore non attiva
   mai nulla.
 - Lettura dello stato di conformita' ed endpoint `/compliance`.
+- Anagrafica territoriale: gerarchia Regione/Provincia/Comune caricata da CSV,
+  ricerca dei comuni per il wizard e collegamento della campagna al comune.
+- Risolutore dei dati demografici: popolazione ed elettori iscritti risolti fra
+  elezione e territorio dichiarando da quale fonte viene ciascun valore, con la
+  fonte registrata nell'impronta della valutazione.
 
 Da fare:
 
@@ -47,10 +52,16 @@ Da fare:
   `testRuleset` esiste gia' e usa lo stesso valutatore del percorso di produzione;
   manca la pagina. Va costruita insieme al ruolo di amministratore di piattaforma
   della Milestone 11, perche' oggi non esiste un ruolo a cui riservarla.
-- Anagrafica di `Election` e `Territory`: oggi la campagna puo' collegarsi a
-  un'elezione, ma non esiste il percorso per crearla e popolarla con popolazione ed
-  elettori iscritti da fonte ufficiale. Finche' manca, i calcoli dei limiti restano
-  non valutabili, che e' il comportamento corretto ma non ancora utile.
+- Elettori iscritti nelle liste elettorali. L'anagrafica comunale e' caricata
+  (7.896 comuni con popolazione residente, 734 sopra i 15.000 abitanti), quindi la
+  soglia demografica e' calcolabile. I limiti di spesa no: sono parametrati agli
+  elettori iscritti, che il file non contiene. Il dato va acquisito per singola
+  consultazione con la propria fonte, nel wizard della Milestone 3.
+- Verifica dell'anagrafica territoriale su fonte ufficiale: provenienza e data di
+  rilevazione del file caricato non sono note, quindi nessun territorio e' marcato
+  come verificato e la regola di sistema lo segnala.
+- Anagrafica di `Election`: la campagna puo' collegarsi a un'elezione, ma non
+  esiste ancora il percorso per crearla con le proprie date ufficiali.
 - Tabella dedicata alla provenienza delle valutazioni, oggi registrata in
   `AuditLog`. Richiede una migration.
 - `Campaign.proclamationDate`: il contesto dichiara il campo ma lo schema non ha la

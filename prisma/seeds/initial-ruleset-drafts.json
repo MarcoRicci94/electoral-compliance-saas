@@ -173,7 +173,7 @@
           "severityDefault": "INFO",
           "legalSourceKey": "L96-2012-ART13",
           "conditionExpression": {
-            "field": "election.population",
+            "field": "demographics.population",
             "operator": "gt",
             "value": 15000
           },
@@ -193,7 +193,7 @@
           "conditionExpression": {
             "all": [
               {
-                "field": "election.population",
+                "field": "demographics.population",
                 "operator": "gt",
                 "value": 15000
               },
@@ -254,7 +254,7 @@
           "conditionExpression": {
             "all": [
               {
-                "field": "election.population",
+                "field": "demographics.population",
                 "operator": "gt",
                 "value": 15000
               },
@@ -291,12 +291,12 @@
                 "value": "MAYOR"
               },
               {
-                "field": "election.population",
+                "field": "demographics.population",
                 "operator": "gt",
                 "value": 15000
               },
               {
-                "field": "election.population",
+                "field": "demographics.population",
                 "operator": "lte",
                 "value": 100000
               }
@@ -317,7 +317,7 @@
                   "operation": "multiply",
                   "items": [
                     {
-                      "field": "election.registeredVoters"
+                      "field": "demographics.registeredVoters"
                     },
                     {
                       "constant": "mayorBand1PerVoter"
@@ -343,12 +343,12 @@
                 "value": "MAYOR"
               },
               {
-                "field": "election.population",
+                "field": "demographics.population",
                 "operator": "gt",
                 "value": 100000
               },
               {
-                "field": "election.population",
+                "field": "demographics.population",
                 "operator": "lte",
                 "value": 500000
               }
@@ -369,7 +369,7 @@
                   "operation": "multiply",
                   "items": [
                     {
-                      "field": "election.registeredVoters"
+                      "field": "demographics.registeredVoters"
                     },
                     {
                       "constant": "mayorBand2PerVoter"
@@ -395,7 +395,7 @@
                 "value": "MAYOR"
               },
               {
-                "field": "election.population",
+                "field": "demographics.population",
                 "operator": "gt",
                 "value": 500000
               }
@@ -416,7 +416,7 @@
                   "operation": "multiply",
                   "items": [
                     {
-                      "field": "election.registeredVoters"
+                      "field": "demographics.registeredVoters"
                     },
                     {
                       "constant": "mayorBand3PerVoter"
@@ -442,12 +442,12 @@
                 "value": "MUNICIPAL_COUNCILLOR"
               },
               {
-                "field": "election.population",
+                "field": "demographics.population",
                 "operator": "gt",
                 "value": 15000
               },
               {
-                "field": "election.population",
+                "field": "demographics.population",
                 "operator": "lte",
                 "value": 100000
               }
@@ -468,7 +468,7 @@
                   "operation": "multiply",
                   "items": [
                     {
-                      "field": "election.registeredVoters"
+                      "field": "demographics.registeredVoters"
                     },
                     {
                       "constant": "councillorPerVoter"
@@ -494,12 +494,12 @@
                 "value": "MUNICIPAL_COUNCILLOR"
               },
               {
-                "field": "election.population",
+                "field": "demographics.population",
                 "operator": "gt",
                 "value": 100000
               },
               {
-                "field": "election.population",
+                "field": "demographics.population",
                 "operator": "lte",
                 "value": 500000
               }
@@ -520,7 +520,7 @@
                   "operation": "multiply",
                   "items": [
                     {
-                      "field": "election.registeredVoters"
+                      "field": "demographics.registeredVoters"
                     },
                     {
                       "constant": "councillorPerVoter"
@@ -546,7 +546,7 @@
                 "value": "MUNICIPAL_COUNCILLOR"
               },
               {
-                "field": "election.population",
+                "field": "demographics.population",
                 "operator": "gt",
                 "value": 500000
               }
@@ -567,7 +567,7 @@
                   "operation": "multiply",
                   "items": [
                     {
-                      "field": "election.registeredVoters"
+                      "field": "demographics.registeredVoters"
                     },
                     {
                       "constant": "councillorPerVoter"
@@ -607,7 +607,7 @@
           "conditionExpression": {
             "all": [
               {
-                "field": "election.population",
+                "field": "demographics.population",
                 "operator": "gt",
                 "value": 15000
               },
@@ -673,7 +673,7 @@
           "severityDefault": "ACTION_REQUIRED",
           "legalSourceKey": "L3-2019",
           "conditionExpression": {
-            "field": "election.population",
+            "field": "demographics.population",
             "operator": "gt",
             "value": 15000
           },
@@ -692,7 +692,7 @@
           "severityDefault": "WARNING",
           "legalSourceKey": "SYSTEM-CONTROL",
           "conditionExpression": {
-            "field": "election.hasVerifiedSource",
+            "field": "demographics.isVerified",
             "operator": "eq",
             "value": false
           },
@@ -818,7 +818,7 @@
                   "operation": "multiply",
                   "items": [
                     {
-                      "field": "election.population"
+                      "field": "demographics.population"
                     },
                     {
                       "constant": "candidatePerResident"
@@ -895,7 +895,7 @@
           "severityDefault": "WARNING",
           "legalSourceKey": "SYSTEM-CONTROL",
           "conditionExpression": {
-            "field": "election.hasVerifiedSource",
+            "field": "demographics.isVerified",
             "operator": "eq",
             "value": false
           },

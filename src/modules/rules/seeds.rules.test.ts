@@ -182,7 +182,13 @@ describe("le bozze girano davvero sul valutatore", () => {
       officeSought: "MUNICIPAL_COUNCILLOR",
       isZeroCampaign: false
     },
-    election: { population: 380_000, registeredVoters: 250_000, hasVerifiedSource: true },
+    demographics: {
+      population: 380_000,
+      registeredVoters: 250_000,
+      populationSource: "TERRITORY",
+      registeredVotersSource: "TERRITORY",
+      isVerified: true
+    },
     mandatary: { exists: true },
     finance: {
       externalContributionCount: 0,
@@ -241,7 +247,7 @@ describe("le bozze girano davvero sul valutatore", () => {
   it("avverte quando i dati elettorali non sono verificati su fonte ufficiale", () => {
     const result = evaluateRules(
       municipal.rules.map(toEvaluatable),
-      { ...context, election: { ...context.election, hasVerifiedSource: false } },
+      { ...context, demographics: { ...context.demographics, isVerified: false } },
       parameters
     );
     expect(result.findings.map((finding) => finding.title)).toContain(
