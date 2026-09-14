@@ -1,61 +1,910 @@
 {
   "status": "LEGAL_REVIEW_REQUIRED",
-  "rulesets": [
+  "note": "Bozze non attivabili. Ogni regola e ogni parametro restano inattivi finche' un revisore non collega una fonte ufficiale verificata e non porta il ruleset in stato ACTIVE. Nessun valore numerico contenuto in questo file e' stato verificato.",
+  "legalSources": [
     {
-      "name": "Italia — Politiche — bozza iniziale",
-      "jurisdiction": "ITALY_BASE",
-      "electionType": "POLITICAL",
-      "version": "draft-2026-08",
-      "rules": [
-        {
-          "ruleCode": "IT-POL-SCOPE-001",
-          "conditionExpression": {
-            "all": [
-              { "field": "campaign.electionType", "operator": "eq", "value": "POLITICAL" },
-              { "field": "campaign.officeSought", "operator": "in", "value": ["DEPUTY", "SENATOR"] }
-            ]
-          },
-          "effectType": "INFORMATION"
-        },
-        {
-          "ruleCode": "IT-POL-MAND-002",
-          "conditionExpression": { "field": "mandatary.activeCount", "operator": "gt", "value": 1 },
-          "effectType": "BLOCKER"
-        },
-        {
-          "ruleCode": "IT-POL-REPORT-001",
-          "conditionExpression": {
-            "field": "campaign.electionType",
-            "operator": "eq",
-            "value": "POLITICAL"
-          },
-          "effectType": "REQUIREMENT"
-        }
-      ]
+      "key": "L515-1993-ART7",
+      "sourceType": "LAW",
+      "title": "Legge 10 dicembre 1993, n. 515, art. 7",
+      "lawNumber": "515/1993",
+      "lawDate": "1993-12-10",
+      "article": "7",
+      "officialUrl": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:legge:1993-12-10;515"
     },
+    {
+      "key": "L515-1993-ART11",
+      "sourceType": "LAW",
+      "title": "Legge 10 dicembre 1993, n. 515, art. 11",
+      "lawNumber": "515/1993",
+      "lawDate": "1993-12-10",
+      "article": "11",
+      "officialUrl": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:legge:1993-12-10;515"
+    },
+    {
+      "key": "L96-2012-ART13",
+      "sourceType": "LAW",
+      "title": "Legge 6 luglio 2012, n. 96, art. 13",
+      "lawNumber": "96/2012",
+      "lawDate": "2012-07-06",
+      "article": "13",
+      "officialUrl": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:legge:2012-07-06;96"
+    },
+    {
+      "key": "L659-1981-ART4",
+      "sourceType": "LAW",
+      "title": "Legge 18 novembre 1981, n. 659, art. 4",
+      "lawNumber": "659/1981",
+      "lawDate": "1981-11-18",
+      "article": "4",
+      "officialUrl": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:legge:1981-11-18;659"
+    },
+    {
+      "key": "L3-2019",
+      "sourceType": "LAW",
+      "title": "Legge 9 gennaio 2019, n. 3",
+      "lawNumber": "3/2019",
+      "lawDate": "2019-01-09",
+      "officialUrl": "https://www.normattiva.it/uri-res/N2Ls?urn:nir:stato:legge:2019-01-09;3"
+    },
+    {
+      "key": "COREGE-TOSCANA-VADEMECUM",
+      "sourceType": "COREGE_GUIDANCE",
+      "title": "Vademecum del Collegio regionale di garanzia elettorale della Toscana",
+      "authority": "COREGE Toscana"
+    },
+    {
+      "key": "SYSTEM-CONTROL",
+      "sourceType": "SYSTEM_CONTROL",
+      "title": "Controllo di sistema (non e' un obbligo di legge)"
+    },
+    {
+      "key": "PRODUCT-PRACTICE",
+      "sourceType": "PRODUCT_BEST_PRACTICE",
+      "title": "Buona pratica di prodotto (non e' un obbligo di legge)"
+    }
+  ],
+  "rulesets": [
     {
       "name": "Italia — Comunali — bozza iniziale",
       "jurisdiction": "ITALY_BASE",
       "electionType": "MUNICIPAL",
-      "version": "draft-2026-08",
+      "version": "draft-2026-09",
+      "effectiveFrom": "2026-01-01",
+      "status": "DRAFT",
+      "parameters": [
+        {
+          "code": "mayorBand1Fixed",
+          "value": "25000",
+          "unit": "EUR",
+          "legalSourceKey": "L96-2012-ART13",
+          "note": "Valore ricavato dalla ricognizione normativa preliminare e NON verificato su fonte ufficiale."
+        },
+        {
+          "code": "mayorBand1PerVoter",
+          "value": "1",
+          "unit": "EUR",
+          "legalSourceKey": "L96-2012-ART13",
+          "note": "Valore ricavato dalla ricognizione normativa preliminare e NON verificato su fonte ufficiale."
+        },
+        {
+          "code": "mayorBand2Fixed",
+          "value": "125000",
+          "unit": "EUR",
+          "legalSourceKey": "L96-2012-ART13",
+          "note": "Valore ricavato dalla ricognizione normativa preliminare e NON verificato su fonte ufficiale."
+        },
+        {
+          "code": "mayorBand2PerVoter",
+          "value": "1",
+          "unit": "EUR",
+          "legalSourceKey": "L96-2012-ART13",
+          "note": "Valore ricavato dalla ricognizione normativa preliminare e NON verificato su fonte ufficiale."
+        },
+        {
+          "code": "mayorBand3Fixed",
+          "value": "250000",
+          "unit": "EUR",
+          "legalSourceKey": "L96-2012-ART13",
+          "note": "Valore ricavato dalla ricognizione normativa preliminare e NON verificato su fonte ufficiale."
+        },
+        {
+          "code": "mayorBand3PerVoter",
+          "value": "0.90",
+          "unit": "EUR",
+          "legalSourceKey": "L96-2012-ART13",
+          "note": "Valore ricavato dalla ricognizione normativa preliminare e NON verificato su fonte ufficiale."
+        },
+        {
+          "code": "councillorBand1Fixed",
+          "value": "5000",
+          "unit": "EUR",
+          "legalSourceKey": "L96-2012-ART13",
+          "note": "Valore ricavato dalla ricognizione normativa preliminare e NON verificato su fonte ufficiale."
+        },
+        {
+          "code": "councillorBand2Fixed",
+          "value": "12500",
+          "unit": "EUR",
+          "legalSourceKey": "L96-2012-ART13",
+          "note": "Valore ricavato dalla ricognizione normativa preliminare e NON verificato su fonte ufficiale."
+        },
+        {
+          "code": "councillorBand3Fixed",
+          "value": "25000",
+          "unit": "EUR",
+          "legalSourceKey": "L96-2012-ART13",
+          "note": "Valore ricavato dalla ricognizione normativa preliminare e NON verificato su fonte ufficiale."
+        },
+        {
+          "code": "councillorPerVoter",
+          "value": "0.05",
+          "unit": "EUR",
+          "legalSourceKey": "L96-2012-ART13",
+          "note": "Valore ricavato dalla ricognizione normativa preliminare e NON verificato su fonte ufficiale."
+        },
+        {
+          "code": "populationThreshold",
+          "value": "15000",
+          "unit": "abitanti",
+          "legalSourceKey": "L96-2012-ART13",
+          "note": "Valore ricavato dalla ricognizione normativa preliminare e NON verificato su fonte ufficiale."
+        },
+        {
+          "code": "mandataryExemptionThreshold",
+          "value": "2500",
+          "unit": "EUR",
+          "legalSourceKey": "L96-2012-ART13",
+          "note": "Valore ricavato dalla ricognizione normativa preliminare e NON verificato su fonte ufficiale."
+        },
+        {
+          "code": "donorAnnualDeclarationThreshold",
+          "value": "3000",
+          "unit": "EUR",
+          "legalSourceKey": "L659-1981-ART4",
+          "note": "Valore ricavato dalla ricognizione normativa preliminare e NON verificato su fonte ufficiale."
+        }
+      ],
       "rules": [
         {
           "ruleCode": "IT-COM-SCOPE-002",
+          "name": "Perimetro della rendicontazione comunale",
+          "description": "Nei comuni oltre la soglia demografica si applica la disciplina di rendicontazione della campagna elettorale.",
+          "category": "SCOPE",
+          "severityDefault": "INFO",
+          "legalSourceKey": "L96-2012-ART13",
           "conditionExpression": {
             "field": "election.population",
             "operator": "gt",
             "value": 15000
           },
-          "effectType": "INFORMATION"
+          "effectType": "INFORMATION",
+          "effectPayload": {
+            "title": "Disciplina di rendicontazione applicabile",
+            "description": "La campagna ricade nel perimetro della rendicontazione elettorale per i comuni sopra la soglia demografica. Verificare la fonte prima di attivare la regola."
+          }
         },
         {
-          "ruleCode": "IT-COM-LOCAL-001",
+          "ruleCode": "IT-COM-MAND-001",
+          "name": "Raccolta di fondi da terzi senza mandatario",
+          "description": "Sono stati registrati contributi da soggetti diversi dal candidato in assenza di un mandatario elettorale.",
+          "category": "MANDATARY",
+          "severityDefault": "BLOCKER",
+          "legalSourceKey": "L96-2012-ART13",
           "conditionExpression": {
-            "field": "municipalLocalRules.status",
-            "operator": "eq",
-            "value": "NOT_YET_VERIFIED"
+            "all": [
+              {
+                "field": "election.population",
+                "operator": "gt",
+                "value": 15000
+              },
+              {
+                "field": "finance.externalContributionCount",
+                "operator": "gt",
+                "value": 0
+              },
+              {
+                "field": "mandatary.exists",
+                "operator": "eq",
+                "value": false
+              }
+            ]
           },
-          "effectType": "TASK"
+          "effectType": "BLOCKER",
+          "effectPayload": {
+            "title": "Contributi di terzi registrati senza mandatario elettorale",
+            "description": "Risultano contributi provenienti da soggetti diversi dal candidato mentre non risulta nominato alcun mandatario elettorale. La posizione va verificata prima del deposito del rendiconto.",
+            "severity": "BLOCKER"
+          }
+        },
+        {
+          "ruleCode": "IT-COM-MAND-002",
+          "name": "Attivita' di verifica sulla nomina del mandatario",
+          "description": "Attivita' operativa conseguente al rilievo sulla nomina del mandatario.",
+          "category": "MANDATARY",
+          "severityDefault": "ACTION_REQUIRED",
+          "legalSourceKey": "L96-2012-ART13",
+          "conditionExpression": {
+            "all": [
+              {
+                "field": "finance.externalContributionCount",
+                "operator": "gt",
+                "value": 0
+              },
+              {
+                "field": "mandatary.exists",
+                "operator": "eq",
+                "value": false
+              }
+            ]
+          },
+          "effectType": "TASK",
+          "effectPayload": {
+            "title": "Verificare la nomina del mandatario elettorale",
+            "description": "Il regime dichiarato all'apertura della campagna potrebbe non essere piu' applicabile: verificare con il proprio consulente la necessita' di nominare un mandatario.",
+            "priority": "CRITICAL"
+          }
+        },
+        {
+          "ruleCode": "IT-COM-MAND-EXC-001",
+          "name": "Possibile regime senza mandatario",
+          "description": "Campagna autofinanziata di importo contenuto: possibile eccezione all'obbligo di nomina.",
+          "category": "MANDATARY",
+          "severityDefault": "INFO",
+          "legalSourceKey": "L96-2012-ART13",
+          "conditionExpression": {
+            "all": [
+              {
+                "field": "election.population",
+                "operator": "gt",
+                "value": 15000
+              },
+              {
+                "field": "finance.externalContributionCount",
+                "operator": "eq",
+                "value": 0
+              },
+              {
+                "field": "finance.expensesGrossTotal",
+                "operator": "lt",
+                "value": 2500
+              }
+            ]
+          },
+          "effectType": "INFORMATION",
+          "effectPayload": {
+            "title": "Possibile regime senza mandatario elettorale",
+            "description": "Allo stato non risultano contributi di terzi e la spesa registrata e' inferiore alla soglia dell'eccezione. Resta fermo l'obbligo di rendiconto. La soglia e' un parametro da verificare."
+          }
+        },
+        {
+          "ruleCode": "IT-COM-LIMIT-MAYOR-001",
+          "name": "Limite di spesa - sindaco - prima fascia",
+          "description": "Calcolo del limite di spesa per il candidato sindaco nella prima fascia demografica.",
+          "category": "SPENDING_LIMIT",
+          "severityDefault": "INFO",
+          "legalSourceKey": "L96-2012-ART13",
+          "conditionExpression": {
+            "all": [
+              {
+                "field": "campaign.officeSought",
+                "operator": "eq",
+                "value": "MAYOR"
+              },
+              {
+                "field": "election.population",
+                "operator": "gt",
+                "value": 15000
+              },
+              {
+                "field": "election.population",
+                "operator": "lte",
+                "value": 100000
+              }
+            ]
+          },
+          "effectType": "CALCULATION",
+          "effectPayload": {
+            "code": "SPENDING_LIMIT",
+            "label": "Limite di spesa applicabile",
+            "unit": "EUR",
+            "expression": {
+              "operation": "add",
+              "items": [
+                {
+                  "constant": "mayorBand1Fixed"
+                },
+                {
+                  "operation": "multiply",
+                  "items": [
+                    {
+                      "field": "election.registeredVoters"
+                    },
+                    {
+                      "constant": "mayorBand1PerVoter"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "ruleCode": "IT-COM-LIMIT-MAYOR-002",
+          "name": "Limite di spesa - sindaco - seconda fascia",
+          "description": "Calcolo del limite di spesa per il candidato sindaco nella seconda fascia demografica.",
+          "category": "SPENDING_LIMIT",
+          "severityDefault": "INFO",
+          "legalSourceKey": "L96-2012-ART13",
+          "conditionExpression": {
+            "all": [
+              {
+                "field": "campaign.officeSought",
+                "operator": "eq",
+                "value": "MAYOR"
+              },
+              {
+                "field": "election.population",
+                "operator": "gt",
+                "value": 100000
+              },
+              {
+                "field": "election.population",
+                "operator": "lte",
+                "value": 500000
+              }
+            ]
+          },
+          "effectType": "CALCULATION",
+          "effectPayload": {
+            "code": "SPENDING_LIMIT",
+            "label": "Limite di spesa applicabile",
+            "unit": "EUR",
+            "expression": {
+              "operation": "add",
+              "items": [
+                {
+                  "constant": "mayorBand2Fixed"
+                },
+                {
+                  "operation": "multiply",
+                  "items": [
+                    {
+                      "field": "election.registeredVoters"
+                    },
+                    {
+                      "constant": "mayorBand2PerVoter"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "ruleCode": "IT-COM-LIMIT-MAYOR-003",
+          "name": "Limite di spesa - sindaco - terza fascia",
+          "description": "Calcolo del limite di spesa per il candidato sindaco nella terza fascia demografica.",
+          "category": "SPENDING_LIMIT",
+          "severityDefault": "INFO",
+          "legalSourceKey": "L96-2012-ART13",
+          "conditionExpression": {
+            "all": [
+              {
+                "field": "campaign.officeSought",
+                "operator": "eq",
+                "value": "MAYOR"
+              },
+              {
+                "field": "election.population",
+                "operator": "gt",
+                "value": 500000
+              }
+            ]
+          },
+          "effectType": "CALCULATION",
+          "effectPayload": {
+            "code": "SPENDING_LIMIT",
+            "label": "Limite di spesa applicabile",
+            "unit": "EUR",
+            "expression": {
+              "operation": "add",
+              "items": [
+                {
+                  "constant": "mayorBand3Fixed"
+                },
+                {
+                  "operation": "multiply",
+                  "items": [
+                    {
+                      "field": "election.registeredVoters"
+                    },
+                    {
+                      "constant": "mayorBand3PerVoter"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "ruleCode": "IT-COM-LIMIT-COUNCILLOR-001",
+          "name": "Limite di spesa - consigliere - prima fascia",
+          "description": "Calcolo del limite di spesa per il candidato consigliere nella prima fascia demografica.",
+          "category": "SPENDING_LIMIT",
+          "severityDefault": "INFO",
+          "legalSourceKey": "L96-2012-ART13",
+          "conditionExpression": {
+            "all": [
+              {
+                "field": "campaign.officeSought",
+                "operator": "eq",
+                "value": "MUNICIPAL_COUNCILLOR"
+              },
+              {
+                "field": "election.population",
+                "operator": "gt",
+                "value": 15000
+              },
+              {
+                "field": "election.population",
+                "operator": "lte",
+                "value": 100000
+              }
+            ]
+          },
+          "effectType": "CALCULATION",
+          "effectPayload": {
+            "code": "SPENDING_LIMIT",
+            "label": "Limite di spesa applicabile",
+            "unit": "EUR",
+            "expression": {
+              "operation": "add",
+              "items": [
+                {
+                  "constant": "councillorBand1Fixed"
+                },
+                {
+                  "operation": "multiply",
+                  "items": [
+                    {
+                      "field": "election.registeredVoters"
+                    },
+                    {
+                      "constant": "councillorPerVoter"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "ruleCode": "IT-COM-LIMIT-COUNCILLOR-002",
+          "name": "Limite di spesa - consigliere - seconda fascia",
+          "description": "Calcolo del limite di spesa per il candidato consigliere nella seconda fascia demografica.",
+          "category": "SPENDING_LIMIT",
+          "severityDefault": "INFO",
+          "legalSourceKey": "L96-2012-ART13",
+          "conditionExpression": {
+            "all": [
+              {
+                "field": "campaign.officeSought",
+                "operator": "eq",
+                "value": "MUNICIPAL_COUNCILLOR"
+              },
+              {
+                "field": "election.population",
+                "operator": "gt",
+                "value": 100000
+              },
+              {
+                "field": "election.population",
+                "operator": "lte",
+                "value": 500000
+              }
+            ]
+          },
+          "effectType": "CALCULATION",
+          "effectPayload": {
+            "code": "SPENDING_LIMIT",
+            "label": "Limite di spesa applicabile",
+            "unit": "EUR",
+            "expression": {
+              "operation": "add",
+              "items": [
+                {
+                  "constant": "councillorBand2Fixed"
+                },
+                {
+                  "operation": "multiply",
+                  "items": [
+                    {
+                      "field": "election.registeredVoters"
+                    },
+                    {
+                      "constant": "councillorPerVoter"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "ruleCode": "IT-COM-LIMIT-COUNCILLOR-003",
+          "name": "Limite di spesa - consigliere - terza fascia",
+          "description": "Calcolo del limite di spesa per il candidato consigliere nella terza fascia demografica.",
+          "category": "SPENDING_LIMIT",
+          "severityDefault": "INFO",
+          "legalSourceKey": "L96-2012-ART13",
+          "conditionExpression": {
+            "all": [
+              {
+                "field": "campaign.officeSought",
+                "operator": "eq",
+                "value": "MUNICIPAL_COUNCILLOR"
+              },
+              {
+                "field": "election.population",
+                "operator": "gt",
+                "value": 500000
+              }
+            ]
+          },
+          "effectType": "CALCULATION",
+          "effectPayload": {
+            "code": "SPENDING_LIMIT",
+            "label": "Limite di spesa applicabile",
+            "unit": "EUR",
+            "expression": {
+              "operation": "add",
+              "items": [
+                {
+                  "constant": "councillorBand3Fixed"
+                },
+                {
+                  "operation": "multiply",
+                  "items": [
+                    {
+                      "field": "election.registeredVoters"
+                    },
+                    {
+                      "constant": "councillorPerVoter"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "ruleCode": "IT-COM-REPORT-001",
+          "name": "Termine per il rendiconto",
+          "description": "Termine per la presentazione del rendiconto, decorrente dalla proclamazione.",
+          "category": "REPORTING",
+          "severityDefault": "ACTION_REQUIRED",
+          "legalSourceKey": "COREGE-TOSCANA-VADEMECUM",
+          "conditionExpression": {
+            "field": "campaign.proclamationDate",
+            "operator": "exists"
+          },
+          "effectType": "DEADLINE",
+          "effectPayload": {
+            "name": "Rendiconto al Collegio regionale di garanzia elettorale",
+            "triggerEvent": "PROCLAMATION",
+            "triggerField": "campaign.proclamationDate",
+            "offsetDefinition": "P3M"
+          }
+        },
+        {
+          "ruleCode": "IT-COM-REPORT-ZERO-001",
+          "name": "Rendiconto dovuto anche in assenza di movimenti",
+          "description": "Il rendiconto e' dovuto anche quando non risultano spese ne' contributi.",
+          "category": "REPORTING",
+          "severityDefault": "ACTION_REQUIRED",
+          "legalSourceKey": "COREGE-TOSCANA-VADEMECUM",
+          "conditionExpression": {
+            "all": [
+              {
+                "field": "election.population",
+                "operator": "gt",
+                "value": 15000
+              },
+              {
+                "field": "campaign.isZeroCampaign",
+                "operator": "eq",
+                "value": true
+              }
+            ]
+          },
+          "effectType": "REQUIREMENT",
+          "effectPayload": {
+            "title": "Rendiconto dovuto anche senza spese ne' contributi",
+            "description": "Non risulta registrato alcun movimento. Il rendiconto va comunque presentato: la campagna a zero non esonera dall'adempimento.",
+            "severity": "ACTION_REQUIRED"
+          }
+        },
+        {
+          "ruleCode": "IT-COM-DOC-CORP-001",
+          "name": "Documentazione dei contributi societari",
+          "description": "I contributi provenienti da societa' richiedono una documentazione societaria e contabile specifica.",
+          "category": "CONTRIBUTIONS",
+          "severityDefault": "CRITICAL",
+          "legalSourceKey": "COREGE-TOSCANA-VADEMECUM",
+          "conditionExpression": {
+            "field": "finance.corporateContributionsWithIncompleteDocumentation",
+            "operator": "gt",
+            "value": 0
+          },
+          "effectType": "REQUIREMENT",
+          "effectPayload": {
+            "title": "Documentazione incompleta su contributi societari",
+            "description": "Uno o piu' contributi provenienti da societa' non hanno il corredo documentale completo (delibera dell'organo competente, pagina del libro sociale, scheda contabile, pagina del libro giornale).",
+            "severity": "CRITICAL",
+            "entityType": "Contribution"
+          }
+        },
+        {
+          "ruleCode": "IT-COM-INKIND-001",
+          "name": "Valorizzazione di beni e servizi ricevuti",
+          "description": "I beni e servizi ricevuti devono essere valorizzati e documentati.",
+          "category": "IN_KIND",
+          "severityDefault": "ACTION_REQUIRED",
+          "legalSourceKey": "COREGE-TOSCANA-VADEMECUM",
+          "conditionExpression": {
+            "field": "finance.inKindWithoutSupportingDocument",
+            "operator": "gt",
+            "value": 0
+          },
+          "effectType": "REQUIREMENT",
+          "effectPayload": {
+            "title": "Beni o servizi ricevuti privi di documentazione del valore",
+            "description": "Sono stati registrati beni o servizi ricevuti senza il documento che giustifica il valore attribuito.",
+            "severity": "ACTION_REQUIRED",
+            "entityType": "InKindContribution"
+          }
+        },
+        {
+          "ruleCode": "IT-TRANS-CV-001",
+          "name": "Pubblicazione di curriculum e casellario",
+          "description": "Adempimento di trasparenza sulla pubblicazione del curriculum e del certificato del casellario giudiziale.",
+          "category": "TRANSPARENCY",
+          "severityDefault": "ACTION_REQUIRED",
+          "legalSourceKey": "L3-2019",
+          "conditionExpression": {
+            "field": "election.population",
+            "operator": "gt",
+            "value": 15000
+          },
+          "effectType": "TASK",
+          "effectPayload": {
+            "title": "Predisporre curriculum e certificato del casellario giudiziale",
+            "description": "Verificare gli obblighi di pubblicazione del curriculum e del certificato del casellario giudiziale e i relativi termini.",
+            "priority": "ACTION_REQUIRED"
+          }
+        },
+        {
+          "ruleCode": "IT-SYS-ELECTION-SOURCE-001",
+          "name": "Dati elettorali non verificati",
+          "description": "Controllo di sistema: i dati demografici ed elettorali usati nei calcoli non risultano verificati su fonte ufficiale.",
+          "category": "SYSTEM",
+          "severityDefault": "WARNING",
+          "legalSourceKey": "SYSTEM-CONTROL",
+          "conditionExpression": {
+            "field": "election.hasVerifiedSource",
+            "operator": "eq",
+            "value": false
+          },
+          "effectType": "WARNING",
+          "effectPayload": {
+            "title": "Dati dell'elezione non verificati su fonte ufficiale",
+            "description": "Popolazione ed elettori iscritti non risultano verificati su fonte ufficiale. I limiti di spesa calcolati su questi dati non sono affidabili. Questo e' un controllo di sistema, non un obbligo di legge.",
+            "severity": "WARNING"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Italia — Politiche — bozza iniziale",
+      "jurisdiction": "ITALY_BASE",
+      "electionType": "POLITICAL",
+      "version": "draft-2026-09",
+      "effectiveFrom": "2026-01-01",
+      "status": "DRAFT",
+      "parameters": [
+        {
+          "code": "candidateFixedComponent",
+          "value": "52000",
+          "unit": "EUR",
+          "legalSourceKey": "L515-1993-ART7",
+          "note": "Valore ricavato dalla ricognizione normativa preliminare e NON verificato su fonte ufficiale."
+        },
+        {
+          "code": "candidatePerResident",
+          "value": "0.01",
+          "unit": "EUR",
+          "legalSourceKey": "L515-1993-ART7",
+          "note": "Valore ricavato dalla ricognizione normativa preliminare e NON verificato su fonte ufficiale."
+        },
+        {
+          "code": "donorAnnualDeclarationThreshold",
+          "value": "3000",
+          "unit": "EUR",
+          "legalSourceKey": "L659-1981-ART4",
+          "note": "Valore ricavato dalla ricognizione normativa preliminare e NON verificato su fonte ufficiale."
+        }
+      ],
+      "rules": [
+        {
+          "ruleCode": "IT-POL-SCOPE-001",
+          "name": "Perimetro della rendicontazione per le elezioni politiche",
+          "description": "La disciplina della rendicontazione si applica ai candidati alla Camera e al Senato.",
+          "category": "SCOPE",
+          "severityDefault": "INFO",
+          "legalSourceKey": "L515-1993-ART7",
+          "conditionExpression": {
+            "all": [
+              {
+                "field": "campaign.electionType",
+                "operator": "eq",
+                "value": "POLITICAL"
+              },
+              {
+                "field": "campaign.officeSought",
+                "operator": "in",
+                "value": ["DEPUTY", "SENATOR"]
+              }
+            ]
+          },
+          "effectType": "INFORMATION",
+          "effectPayload": {
+            "title": "Disciplina di rendicontazione applicabile",
+            "description": "La candidatura ricade nella disciplina della rendicontazione delle spese elettorali per le elezioni politiche."
+          }
+        },
+        {
+          "ruleCode": "IT-POL-MAND-001",
+          "name": "Mandatario per la raccolta di fondi",
+          "description": "La raccolta dei fondi della campagna avviene tramite il mandatario elettorale.",
+          "category": "MANDATARY",
+          "severityDefault": "BLOCKER",
+          "legalSourceKey": "L515-1993-ART7",
+          "conditionExpression": {
+            "all": [
+              {
+                "field": "mandatary.exists",
+                "operator": "eq",
+                "value": false
+              },
+              {
+                "field": "finance.externalContributionCount",
+                "operator": "gt",
+                "value": 0
+              }
+            ]
+          },
+          "effectType": "BLOCKER",
+          "effectPayload": {
+            "title": "Contributi registrati senza mandatario elettorale",
+            "description": "Risultano contributi da terzi in assenza di mandatario elettorale nominato.",
+            "severity": "BLOCKER"
+          }
+        },
+        {
+          "ruleCode": "IT-POL-LIMIT-001",
+          "name": "Limite di spesa del singolo candidato",
+          "description": "Limite individuale costruito su una componente fissa per circoscrizione e una quota per residente.",
+          "category": "SPENDING_LIMIT",
+          "severityDefault": "INFO",
+          "legalSourceKey": "L515-1993-ART7",
+          "conditionExpression": {
+            "field": "campaign.electionType",
+            "operator": "eq",
+            "value": "POLITICAL"
+          },
+          "effectType": "CALCULATION",
+          "effectPayload": {
+            "code": "SPENDING_LIMIT",
+            "label": "Limite di spesa applicabile",
+            "unit": "EUR",
+            "expression": {
+              "operation": "add",
+              "items": [
+                {
+                  "constant": "candidateFixedComponent"
+                },
+                {
+                  "operation": "multiply",
+                  "items": [
+                    {
+                      "field": "election.population"
+                    },
+                    {
+                      "constant": "candidatePerResident"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "ruleCode": "IT-POL-REPORT-001",
+          "name": "Termine per il rendiconto individuale",
+          "description": "Termine per la presentazione del rendiconto individuale, decorrente dalla proclamazione.",
+          "category": "REPORTING",
+          "severityDefault": "ACTION_REQUIRED",
+          "legalSourceKey": "L515-1993-ART7",
+          "conditionExpression": {
+            "field": "campaign.proclamationDate",
+            "operator": "exists"
+          },
+          "effectType": "DEADLINE",
+          "effectPayload": {
+            "name": "Rendiconto individuale",
+            "triggerEvent": "PROCLAMATION",
+            "triggerField": "campaign.proclamationDate",
+            "offsetDefinition": "P3M"
+          }
+        },
+        {
+          "ruleCode": "IT-POL-REPORT-002",
+          "name": "Sottoscrizione del rendiconto",
+          "description": "Il rendiconto e' sottoscritto dal candidato e controfirmato dal mandatario, che certifica la veridicita' delle entrate.",
+          "category": "REPORTING",
+          "severityDefault": "ACTION_REQUIRED",
+          "legalSourceKey": "L515-1993-ART7",
+          "conditionExpression": {
+            "field": "mandatary.exists",
+            "operator": "eq",
+            "value": true
+          },
+          "effectType": "REQUIREMENT",
+          "effectPayload": {
+            "title": "Rendiconto da sottoscrivere e controfirmare",
+            "description": "Il rendiconto va sottoscritto dal candidato e controfirmato dal mandatario.",
+            "severity": "ACTION_REQUIRED"
+          }
+        },
+        {
+          "ruleCode": "IT-FIN-DECL-001",
+          "name": "Dichiarazione sui finanziamenti oltre soglia annua",
+          "description": "Per i finanziamenti che superano la soglia annua per soggetto erogatore sorgono obblighi dichiarativi.",
+          "category": "CONTRIBUTIONS",
+          "severityDefault": "ACTION_REQUIRED",
+          "legalSourceKey": "L659-1981-ART4",
+          "conditionExpression": {
+            "field": "donors.countOverThreeThousand",
+            "operator": "gt",
+            "value": 0
+          },
+          "effectType": "REQUIREMENT",
+          "effectPayload": {
+            "title": "Finanziamenti oltre la soglia annua per erogatore",
+            "description": "Uno o piu' soggetti hanno erogato nell'anno un importo complessivo superiore alla soglia dichiarativa. Verificare gli adempimenti conseguenti.",
+            "severity": "ACTION_REQUIRED",
+            "entityType": "Donor"
+          }
+        },
+        {
+          "ruleCode": "IT-SYS-ELECTION-SOURCE-001",
+          "name": "Dati elettorali non verificati",
+          "description": "Controllo di sistema: i dati usati nei calcoli non risultano verificati su fonte ufficiale.",
+          "category": "SYSTEM",
+          "severityDefault": "WARNING",
+          "legalSourceKey": "SYSTEM-CONTROL",
+          "conditionExpression": {
+            "field": "election.hasVerifiedSource",
+            "operator": "eq",
+            "value": false
+          },
+          "effectType": "WARNING",
+          "effectPayload": {
+            "title": "Dati dell'elezione non verificati su fonte ufficiale",
+            "description": "I dati demografici usati per il limite di spesa non risultano verificati. Questo e' un controllo di sistema, non un obbligo di legge.",
+            "severity": "WARNING"
+          }
         }
       ]
     }

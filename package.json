@@ -21,6 +21,7 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed:development": "node scripts/seed-development.mjs",
+    "db:seed:rulesets": "node scripts/seed-rulesets.mjs",
     "test:watch": "vitest --project unit --project rules"
   },
   "dependencies": {

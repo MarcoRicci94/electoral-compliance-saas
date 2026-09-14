@@ -1,6 +1,6 @@
 # Implementation backlog
 
-Stato aggiornato al 12 settembre 2026. Una milestone è "completa" solo quando esiste
+Stato aggiornato al 14 settembre 2026. Una milestone è "completa" solo quando esiste
 il codice, non quando esiste la migration.
 
 ## Milestone 0 — completa
@@ -17,26 +17,45 @@ il codice, non quando esiste la migration.
   repository scopati e audit log append-only.
 - Shell di dashboard responsive e test di isolamento fra tenant.
 
-## Milestone 2 — elezioni e Rules Engine (parziale)
+## Milestone 2 — elezioni e Rules Engine (quasi completa)
 
 Fatto:
 
-- Schema di `LegalSource`, `RulesetVersion`, `RuleParameter`, `ComplianceRule`,
-  `ComplianceFinding`, `Task`, `Deadline`.
-- DSL dichiarativa delle condizioni e motore di calcolo in aritmetica Decimal, come
-  funzioni pure testabili.
+- Calendario legale: `P3M` e `P90D` sono termini distinti, con troncamento a fine
+  mese, anni bisestili e termini che precedono l'evento.
+- Costruttore del contesto di valutazione: superficie dichiarata e whitelistata,
+  importi come stringhe decimali, dato assente che resta assente.
+- Schemi tipizzati degli effetti; un `effectPayload` malformato rende la regola non
+  valutabile invece di essere interpretato con indulgenza.
+- Valutatore deterministico come funzione pura, con esito per regola
+  (`MATCHED` / `NOT_MATCHED` / `NOT_EVALUABLE`), stato di conformita' e
+  `readyToFile`.
+- Servizio di valutazione persistente: rilievi, attivita' e scadenze generati e
+  riconciliati fra un'esecuzione e l'altra, senza cancellare fatti storici e senza
+  toccare i rilievi derogati.
+- Provenienza di ogni esecuzione in `AuditLog`: ruleset, versione del valutatore,
+  impronta del contesto ed esito regola per regola.
+- Deroga professionale con motivazione, autore e data.
+- Caricatore dei seed e 23 regole di bozza per Comunali e Politiche, con fonti
+  normative, parametri versionati ed effetti completi. Il caricatore non attiva
+  mai nulla.
+- Lettura dello stato di conformita' ed endpoint `/compliance`.
 
 Da fare:
 
-- `Election` e `Territory` popolati e collegati alla campagna.
-- Servizio di valutazione persistente: dal contesto di campagna alle regole applicabili,
-  con provenance (ruleset, regola, hash degli input, versione del valutatore).
-- Generazione e ciclo di vita di finding, task e deadline; stato
-  `EVALUATION_INCOMPLETE` in caso di errore.
-- Caricamento dei seed `prisma/seeds/initial-ruleset-drafts.json` in stato bozza.
-- Console legale di amministrazione e rule tester, che devono usare lo stesso servizio
-  di valutazione e mai una seconda implementazione.
-- Suite di regressione sui confini normativi.
+- Console legale di amministrazione e rule tester come interfaccia. Il servizio
+  `testRuleset` esiste gia' e usa lo stesso valutatore del percorso di produzione;
+  manca la pagina. Va costruita insieme al ruolo di amministratore di piattaforma
+  della Milestone 11, perche' oggi non esiste un ruolo a cui riservarla.
+- Anagrafica di `Election` e `Territory`: oggi la campagna puo' collegarsi a
+  un'elezione, ma non esiste il percorso per crearla e popolarla con popolazione ed
+  elettori iscritti da fonte ufficiale. Finche' manca, i calcoli dei limiti restano
+  non valutabili, che e' il comportamento corretto ma non ancora utile.
+- Tabella dedicata alla provenienza delle valutazioni, oggi registrata in
+  `AuditLog`. Richiede una migration.
+- `Campaign.proclamationDate`: il contesto dichiara il campo ma lo schema non ha la
+  colonna, quindi le scadenze del rendiconto restano inerti. Richiede una migration
+  e arriva con la Milestone 3.
 
 ## Milestone 3 — wizard e mandatario (parziale)
 
