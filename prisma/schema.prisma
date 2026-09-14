@@ -11,6 +11,11 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+enum UserTokenType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
 enum PlatformRole {
   NONE
   SUPPORT
@@ -202,6 +207,23 @@ enum AllocationType {
   SHARE
 }
 
+model UserToken {
+  id          String        @id @default(cuid())
+  userId      String        @map("user_id")
+  type        UserTokenType
+  /// Si conserva solo l'impronta: chi legge il database non puo' usare il token.
+  tokenHash   String        @unique @map("token_hash")
+  expiresAt   DateTime      @map("expires_at")
+  usedAt      DateTime?     @map("used_at")
+  requestedIp String?       @map("requested_ip")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type, usedAt])
+  @@index([expiresAt])
+  @@map("user_tokens")
+}
+
 model Plan {
   id            String          @id @default(cuid())
   code          String          @unique
@@ -281,6 +303,7 @@ model User {
   candidateProfiles       CandidateProfile[]   @relation("CandidateProfileUser")
   mandataryProfiles       MandataryProfile[]
   auditEvents             AuditLog[]
+  tokens                  UserToken[]
 
   @@map("users")
 }

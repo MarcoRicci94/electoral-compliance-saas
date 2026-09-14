@@ -143,13 +143,27 @@ Fatto:
 - Ruolo `PLATFORM_ADMIN` separato dalle organizzazioni, assegnabile solo da riga
   di comando (`npm run admin:grant`), e back-office con elenco abbonati e stato.
 
+Fatto dopo:
+
+- Verifica dell'indirizzo email e reimpostazione della password, con token
+  monouso di cui il database conserva solo l'impronta, durate diverse per tipo e
+  risposte che non rivelano se un indirizzo sia registrato.
+- Porta del provider email con adattatore di sviluppo che dichiara apertamente
+  di non spedire, invece di fingere una consegna riuscita.
+
 Da fare:
 
+- Invalidare le sessioni aperte quando la password viene reimpostata. Oggi il
+  token di sessione e' un JWT senza stato e resta valido fino alla scadenza (8
+  ore): chi avesse gia' una sessione aperta la mantiene anche dopo il cambio.
+  Richiede una lista di revoca o sessioni con stato.
+- Limitazione della frequenza sulle richieste di reimpostazione: oggi nulla
+  impedisce di inviarne molte di seguito.
+- Autenticazione a due fattori.
 - Collegamento del fornitore di pagamenti. Lo stato autorevole e i webhook
   idempotenti ci sono gia'; mancano l'adattatore, le chiavi e la pagina di
   pagamento. Richiede un account del fornitore.
-- Verifica dell'indirizzo email, recupero password e autenticazione a due
-  fattori: oggi la registrazione crea un account immediatamente utilizzabile.
+- Autenticazione a due fattori.
 - Esportazione dei dati: gli entitlement la garantiscono sempre, ma la funzione
   non esiste ancora. Finche' manca, la garanzia e' solo dichiarata.
 - Impersonificazione di supporto, volutamente non costruita a meta': richiede
