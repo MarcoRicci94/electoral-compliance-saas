@@ -1,6 +1,7 @@
 import { ContributionStatus, ContributionType, ExpenseStatus, type Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { requireCampaignPermission } from "@/modules/access/service";
+import { refreshMandataryRequirement } from "@/modules/campaigns/setup";
 
 type FinanceScope = { actorUserId: string; organizationId: string; campaignId: string };
 
@@ -21,8 +22,8 @@ export async function createContribution(
     scope.campaignId,
     "finance:write"
   );
-  return prisma.$transaction(async (tx) => {
-    const contribution = await tx.contribution.create({
+  const contribution = await prisma.$transaction(async (tx) => {
+    const created = await tx.contribution.create({
       data: {
         campaignId: scope.campaignId,
         donorId: input.donorId,
@@ -41,15 +42,40 @@ export async function createContribution(
         userId: scope.actorUserId,
         action: "CONTRIBUTION_CREATED",
         entityType: "Contribution",
-        entityId: contribution.id,
+        entityId: created.id,
         afterJson: {
-          amount: contribution.amount.toString(),
-          type: contribution.type
+          amount: created.amount.toString(),
+          type: created.type
         } as Prisma.InputJsonValue
       }
     });
-    return contribution;
+    return created;
   });
+
+  return { contribution, ...(await reevaluateAfterFinanceChange(scope)) };
+}
+
+/**
+ * Un contributo registrato puo' smentire il regime dichiarato all'apertura: chi
+ * aveva dichiarato una campagna interamente autofinanziata e incassa un apporto
+ * di terzi cambia presupposti. La rivalutazione parte subito.
+ *
+ * Se fallisce, il contributo resta comunque registrato: il fatto finanziario e'
+ * autorevole e non va perso perche' il motore delle regole non ha risposto. Il
+ * chiamante riceve l'esito e sa che il regime e' da rivalutare.
+ */
+async function reevaluateAfterFinanceChange(scope: FinanceScope) {
+  try {
+    const mandatary = await refreshMandataryRequirement(
+      scope.actorUserId,
+      scope.organizationId,
+      scope.campaignId
+    );
+    return { reevaluated: true as const, mandatary };
+  } catch (error) {
+    console.error("Rivalutazione non riuscita dopo una modifica finanziaria", error);
+    return { reevaluated: false as const, mandatary: null };
+  }
 }
 
 export async function createExpense(

@@ -27,11 +27,20 @@ export const severityValues = [
   "BLOCKER"
 ] as const;
 
+/**
+ * `determines` e' il modo in cui una regola dichiara di decidere il regime del
+ * mandatario. La decisione resta nel dato versionato e collegato alla fonte, non
+ * nel codice: e' esattamente il punto per cui esiste un Rules Engine.
+ */
+export const mandataryDeterminationValues = ["REQUIRED", "NOT_REQUIRED", "NOT_APPLICABLE"] as const;
+export type MandataryDeterminationValue = (typeof mandataryDeterminationValues)[number];
+
 const findingEffectSchema = z.object({
   title: z.string().min(1),
   description: z.string().min(1),
   severity: z.enum(severityValues).optional(),
-  entityType: z.string().min(1).optional()
+  entityType: z.string().min(1).optional(),
+  determinesMandatary: z.enum(mandataryDeterminationValues).optional()
 });
 
 const taskEffectSchema = z.object({

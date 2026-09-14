@@ -245,38 +245,6 @@
           }
         },
         {
-          "ruleCode": "IT-COM-MAND-EXC-001",
-          "name": "Possibile regime senza mandatario",
-          "description": "Campagna autofinanziata di importo contenuto: possibile eccezione all'obbligo di nomina.",
-          "category": "MANDATARY",
-          "severityDefault": "INFO",
-          "legalSourceKey": "L96-2012-ART13",
-          "conditionExpression": {
-            "all": [
-              {
-                "field": "demographics.population",
-                "operator": "gt",
-                "value": 15000
-              },
-              {
-                "field": "finance.externalContributionCount",
-                "operator": "eq",
-                "value": 0
-              },
-              {
-                "field": "finance.expensesGrossTotal",
-                "operator": "lt",
-                "value": 2500
-              }
-            ]
-          },
-          "effectType": "INFORMATION",
-          "effectPayload": {
-            "title": "Possibile regime senza mandatario elettorale",
-            "description": "Allo stato non risultano contributi di terzi e la spesa registrata e' inferiore alla soglia dell'eccezione. Resta fermo l'obbligo di rendiconto. La soglia e' un parametro da verificare."
-          }
-        },
-        {
           "ruleCode": "IT-COM-LIMIT-MAYOR-001",
           "name": "Limite di spesa - sindaco - prima fascia",
           "description": "Calcolo del limite di spesa per il candidato sindaco nella prima fascia demografica.",
@@ -702,6 +670,241 @@
             "description": "Popolazione ed elettori iscritti non risultano verificati su fonte ufficiale. I limiti di spesa calcolati su questi dati non sono affidabili. Questo e' un controllo di sistema, non un obbligo di legge.",
             "severity": "WARNING"
           }
+        },
+        {
+          "ruleCode": "IT-COM-SCOPE-003",
+          "name": "Comune sotto la soglia demografica",
+          "description": "Sotto la soglia demografica la disciplina sul mandatario elettorale non si applica.",
+          "category": "MANDATARY",
+          "severityDefault": "INFO",
+          "legalSourceKey": "L96-2012-ART13",
+          "conditionExpression": {
+            "all": [
+              {
+                "field": "campaign.electionType",
+                "operator": "eq",
+                "value": "MUNICIPAL"
+              },
+              {
+                "field": "demographics.population",
+                "operator": "lte",
+                "value": 15000
+              }
+            ]
+          },
+          "effectType": "INFORMATION",
+          "effectPayload": {
+            "title": "Comune sotto la soglia demografica",
+            "description": "La popolazione del comune non supera la soglia: la disciplina sul mandatario elettorale non risulta applicabile. Soglia e perimetro sono da verificare sulla fonte.",
+            "determinesMandatary": "NOT_APPLICABLE"
+          }
+        },
+        {
+          "ruleCode": "IT-COM-MAND-REQ-001",
+          "name": "Mandatario per apporti esterni",
+          "description": "Sono previsti contributi di terzi, sostegno della lista o del partito, oppure beni e servizi ricevuti.",
+          "category": "MANDATARY",
+          "severityDefault": "ACTION_REQUIRED",
+          "legalSourceKey": "L96-2012-ART13",
+          "conditionExpression": {
+            "all": [
+              {
+                "field": "demographics.population",
+                "operator": "gt",
+                "value": 15000
+              },
+              {
+                "field": "setup.declared",
+                "operator": "eq",
+                "value": true
+              },
+              {
+                "any": [
+                  {
+                    "field": "setup.expectsThirdPartyContributions",
+                    "operator": "eq",
+                    "value": true
+                  },
+                  {
+                    "field": "setup.expectsPartyOrListSupport",
+                    "operator": "eq",
+                    "value": true
+                  },
+                  {
+                    "field": "setup.expectsInKindContributions",
+                    "operator": "eq",
+                    "value": true
+                  },
+                  {
+                    "field": "finance.externalContributionCount",
+                    "operator": "gt",
+                    "value": 0
+                  },
+                  {
+                    "field": "finance.inKindTotal",
+                    "operator": "gt",
+                    "value": 0
+                  }
+                ]
+              }
+            ]
+          },
+          "effectType": "INFORMATION",
+          "effectPayload": {
+            "title": "Il mandatario elettorale risulta necessario",
+            "description": "Nel questionario iniziale hai indicato che riceverai apporti da soggetti diversi da te: contributi di terzi, sostegno della lista o del partito, oppure beni e servizi. In questo caso la nomina del mandatario elettorale e' l'ipotesi ordinaria. Verifica la posizione con il tuo consulente. La verifica considera sia quanto dichiarato nel questionario sia quanto gia' registrato in campagna: se i fatti smentiscono la dichiarazione, prevalgono i fatti.",
+            "severity": "ACTION_REQUIRED",
+            "determinesMandatary": "REQUIRED"
+          }
+        },
+        {
+          "ruleCode": "IT-COM-MAND-REQ-002",
+          "name": "Mandatario per spesa propria oltre la soglia dell'eccezione",
+          "description": "Campagna interamente autofinanziata ma di importo previsto pari o superiore alla soglia dell'eccezione.",
+          "category": "MANDATARY",
+          "severityDefault": "ACTION_REQUIRED",
+          "legalSourceKey": "L96-2012-ART13",
+          "conditionExpression": {
+            "all": [
+              {
+                "field": "demographics.population",
+                "operator": "gt",
+                "value": 15000
+              },
+              {
+                "field": "setup.declared",
+                "operator": "eq",
+                "value": true
+              },
+              {
+                "field": "setup.expectsThirdPartyContributions",
+                "operator": "eq",
+                "value": false
+              },
+              {
+                "field": "setup.expectsPartyOrListSupport",
+                "operator": "eq",
+                "value": false
+              },
+              {
+                "field": "setup.expectsInKindContributions",
+                "operator": "eq",
+                "value": false
+              },
+              {
+                "field": "finance.externalContributionCount",
+                "operator": "eq",
+                "value": 0
+              },
+              {
+                "field": "finance.inKindTotal",
+                "operator": "lte",
+                "value": 0
+              },
+              {
+                "any": [
+                  {
+                    "all": [
+                      {
+                        "field": "setup.expectsOwnSpending",
+                        "operator": "eq",
+                        "value": true
+                      },
+                      {
+                        "field": "setup.plannedOwnSpending",
+                        "operator": "gte",
+                        "value": 2500
+                      }
+                    ]
+                  },
+                  {
+                    "field": "finance.expensesGrossTotal",
+                    "operator": "gte",
+                    "value": 2500
+                  }
+                ]
+              }
+            ]
+          },
+          "effectType": "INFORMATION",
+          "effectPayload": {
+            "title": "Il mandatario elettorale risulta necessario",
+            "description": "La campagna e' interamente finanziata con denaro proprio, ma la spesa prevista raggiunge la soglia oltre la quale l'eccezione non opera. La soglia e' un parametro da verificare sulla fonte. La verifica considera sia quanto dichiarato nel questionario sia quanto gia' registrato in campagna: se i fatti smentiscono la dichiarazione, prevalgono i fatti.",
+            "severity": "ACTION_REQUIRED",
+            "determinesMandatary": "REQUIRED"
+          }
+        },
+        {
+          "ruleCode": "IT-COM-MAND-EXC-001",
+          "name": "Eccezione: campagna autofinanziata di importo contenuto",
+          "description": "Nessun apporto esterno e spesa propria prevista inferiore alla soglia dell'eccezione.",
+          "category": "MANDATARY",
+          "severityDefault": "INFO",
+          "legalSourceKey": "L96-2012-ART13",
+          "conditionExpression": {
+            "all": [
+              {
+                "field": "demographics.population",
+                "operator": "gt",
+                "value": 15000
+              },
+              {
+                "field": "setup.declared",
+                "operator": "eq",
+                "value": true
+              },
+              {
+                "field": "setup.expectsThirdPartyContributions",
+                "operator": "eq",
+                "value": false
+              },
+              {
+                "field": "setup.expectsPartyOrListSupport",
+                "operator": "eq",
+                "value": false
+              },
+              {
+                "field": "setup.expectsInKindContributions",
+                "operator": "eq",
+                "value": false
+              },
+              {
+                "field": "finance.externalContributionCount",
+                "operator": "eq",
+                "value": 0
+              },
+              {
+                "field": "finance.inKindTotal",
+                "operator": "lte",
+                "value": 0
+              },
+              {
+                "any": [
+                  {
+                    "field": "setup.expectsOwnSpending",
+                    "operator": "eq",
+                    "value": false
+                  },
+                  {
+                    "field": "setup.plannedOwnSpending",
+                    "operator": "lt",
+                    "value": 2500
+                  }
+                ]
+              },
+              {
+                "field": "finance.expensesGrossTotal",
+                "operator": "lt",
+                "value": 2500
+              }
+            ]
+          },
+          "effectType": "INFORMATION",
+          "effectPayload": {
+            "title": "Possibile regime senza mandatario elettorale",
+            "description": "In base a quanto dichiarato non sono previsti apporti esterni e la spesa propria prevista resta sotto la soglia dell'eccezione. Resta fermo l'obbligo di presentare il rendiconto. Se durante la campagna ricevi un contributo o superi la spesa prevista, il regime va rivalutato. La verifica considera sia quanto dichiarato nel questionario sia quanto gia' registrato in campagna: se i fatti smentiscono la dichiarazione, prevalgono i fatti.",
+            "determinesMandatary": "NOT_REQUIRED"
+          }
         }
       ]
     },
@@ -904,6 +1107,64 @@
             "title": "Dati dell'elezione non verificati su fonte ufficiale",
             "description": "I dati demografici usati per il limite di spesa non risultano verificati. Questo e' un controllo di sistema, non un obbligo di legge.",
             "severity": "WARNING"
+          }
+        },
+        {
+          "ruleCode": "IT-POL-MAND-REQ-001",
+          "name": "Mandatario per la raccolta dei fondi",
+          "description": "Sono previsti apporti da soggetti diversi dal candidato.",
+          "category": "MANDATARY",
+          "severityDefault": "ACTION_REQUIRED",
+          "legalSourceKey": "L515-1993-ART7",
+          "conditionExpression": {
+            "all": [
+              {
+                "field": "campaign.electionType",
+                "operator": "eq",
+                "value": "POLITICAL"
+              },
+              {
+                "field": "setup.declared",
+                "operator": "eq",
+                "value": true
+              },
+              {
+                "any": [
+                  {
+                    "field": "setup.expectsThirdPartyContributions",
+                    "operator": "eq",
+                    "value": true
+                  },
+                  {
+                    "field": "setup.expectsPartyOrListSupport",
+                    "operator": "eq",
+                    "value": true
+                  },
+                  {
+                    "field": "setup.expectsInKindContributions",
+                    "operator": "eq",
+                    "value": true
+                  },
+                  {
+                    "field": "finance.externalContributionCount",
+                    "operator": "gt",
+                    "value": 0
+                  },
+                  {
+                    "field": "finance.inKindTotal",
+                    "operator": "gt",
+                    "value": 0
+                  }
+                ]
+              }
+            ]
+          },
+          "effectType": "INFORMATION",
+          "effectPayload": {
+            "title": "Il mandatario elettorale risulta necessario",
+            "description": "Nel questionario iniziale hai indicato che riceverai apporti da soggetti diversi da te. Per le elezioni politiche la raccolta dei fondi passa dal mandatario elettorale. Verifica la posizione con il tuo consulente. La verifica considera sia quanto dichiarato nel questionario sia quanto gia' registrato in campagna: se i fatti smentiscono la dichiarazione, prevalgono i fatti.",
+            "severity": "ACTION_REQUIRED",
+            "determinesMandatary": "REQUIRED"
           }
         }
       ]

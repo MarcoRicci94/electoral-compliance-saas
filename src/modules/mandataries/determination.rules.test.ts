@@ -1,64 +1,115 @@
 import { describe, expect, it } from "vitest";
 import { determineMandatary } from "@/modules/mandataries/determination";
+import { evaluateRules, type EvaluatableRule } from "@/modules/rules/evaluator";
 
-describe("determinazione del regime del mandatario", () => {
+function rule(
+  ruleCode: string,
+  determinesMandatary: string | undefined,
+  overrides: Partial<EvaluatableRule> = {}
+): EvaluatableRule {
+  return {
+    id: ruleCode,
+    ruleCode,
+    name: ruleCode,
+    description: "regola di prova",
+    category: "MANDATARY",
+    severityDefault: "INFO",
+    conditionExpression: { field: "campaign.electionType", operator: "eq", value: "MUNICIPAL" },
+    effectType: "INFORMATION",
+    effectPayload: { title: "T", description: "D", determinesMandatary },
+    legalSourceId: null,
+    legalSourceTitle: null,
+    ...overrides
+  };
+}
+
+const context = { campaign: { electionType: "MUNICIPAL" } };
+const determine = (rules: EvaluatableRule[], ctx: Record<string, unknown> = context) =>
+  determineMandatary(evaluateRules(rules, ctx));
+
+describe("la determinazione viene dalle regole, non dal codice", () => {
+  it("conclude che il mandatario e' necessario citando la regola che lo dice", () => {
+    expect(determine([rule("IT-COM-MAND-REQ-001", "REQUIRED")])).toEqual({
+      requirement: "REQUIRED",
+      ruleCodes: ["IT-COM-MAND-REQ-001"]
+    });
+  });
+
+  it("conclude che non e' necessario citando la regola di eccezione", () => {
+    expect(determine([rule("IT-COM-MAND-EXC-001", "NOT_REQUIRED")])).toEqual({
+      requirement: "NOT_REQUIRED",
+      ruleCodes: ["IT-COM-MAND-EXC-001"]
+    });
+  });
+
   it("riconosce la campagna fuori dal perimetro dell'obbligo", () => {
-    expect(determineMandatary({ applicable: false, requiresMandatary: null })).toEqual({
-      status: "NOT_APPLICABLE",
-      sourceRuleCode: undefined
-    });
+    expect(determine([rule("IT-COM-SCOPE-003", "NOT_APPLICABLE")]).requirement).toBe(
+      "NOT_APPLICABLE"
+    );
   });
 
-  it("dichiara obbligatorio il mandatario citando la regola che lo impone", () => {
-    expect(
-      determineMandatary({
-        applicable: true,
-        requiresMandatary: true,
-        sourceRuleCode: "IT-POL-MAND-001"
-      })
-    ).toEqual({ status: "REQUIRED", sourceRuleCode: "IT-POL-MAND-001" });
+  it("ignora le regole che non si pronunciano sul mandatario", () => {
+    const result = determine([
+      rule("IT-COM-SCOPE-002", undefined),
+      rule("IT-TRANS-CV-001", undefined),
+      rule("IT-COM-MAND-REQ-001", "REQUIRED")
+    ]);
+    expect(result.requirement).toBe("REQUIRED");
+    expect(result.ruleCodes).toEqual(["IT-COM-MAND-REQ-001"]);
   });
 
-  it("dichiara non necessario il mandatario citando la regola di eccezione", () => {
-    expect(
-      determineMandatary({
-        applicable: true,
-        requiresMandatary: false,
-        sourceRuleCode: "IT-COM-MAND-EXC-001"
-      })
-    ).toEqual({ status: "NOT_REQUIRED", sourceRuleCode: "IT-COM-MAND-EXC-001" });
+  it("piu' regole concordi restano una conclusione sola, con tutte le fonti", () => {
+    const result = determine([
+      rule("IT-COM-MAND-REQ-001", "REQUIRED"),
+      rule("IT-COM-MAND-REQ-002", "REQUIRED")
+    ]);
+    expect(result.requirement).toBe("REQUIRED");
+    expect(result.ruleCodes).toEqual(["IT-COM-MAND-REQ-001", "IT-COM-MAND-REQ-002"]);
   });
+});
 
-  it("non conclude nulla quando la regola non e' valutabile", () => {
-    expect(determineMandatary({ applicable: true, requiresMandatary: null })).toEqual({
-      status: "EVALUATION_INCOMPLETE",
-      reason: "Regola del mandatario non valutabile"
-    });
+describe("i casi in cui rifiuta di concludere", () => {
+  it("non sceglie fra due regole in conflitto", () => {
+    const result = determine([
+      rule("IT-COM-MAND-REQ-001", "REQUIRED"),
+      rule("IT-COM-MAND-EXC-001", "NOT_REQUIRED")
+    ]);
+    expect(result.requirement).toBe("EVALUATION_INCOMPLETE");
+    expect(result.reason).toMatch(/conflitto/);
+    expect(result.ruleCodes).toHaveLength(2);
   });
 
   /**
-   * Una conclusione senza fonte sarebbe una decisione legale non tracciabile: deve
-   * degradare a valutazione incompleta, non diventare un "non serve il mandatario".
+   * Il caso piu' importante: una regola non valutabile altrove nel ruleset non
+   * deve lasciar concludere "non serve il mandatario". Il quadro e' incompleto e
+   * va detto.
    */
-  it("rifiuta una conclusione priva di regola di riferimento", () => {
-    expect(determineMandatary({ applicable: true, requiresMandatary: false }).status).toBe(
-      "EVALUATION_INCOMPLETE"
-    );
-    expect(determineMandatary({ applicable: true, requiresMandatary: true }).status).toBe(
-      "EVALUATION_INCOMPLETE"
-    );
+  it("non conclude se una qualsiasi regola non e' stata valutabile", () => {
+    const result = determine([
+      rule("IT-COM-MAND-EXC-001", "NOT_REQUIRED"),
+      rule("IT-COM-LIMIT-001", undefined, {
+        conditionExpression: { field: "demographics.population", operator: "gt", value: 15000 }
+      })
+    ]);
+    expect(result.requirement).toBe("EVALUATION_INCOMPLETE");
+    expect(result.ruleCodes).toContain("IT-COM-LIMIT-001");
   });
 
-  it("conserva la motivazione fornita dal valutatore", () => {
-    expect(
-      determineMandatary({
-        applicable: true,
-        requiresMandatary: null,
-        reason: "Popolazione del comune non disponibile"
-      })
-    ).toEqual({
-      status: "EVALUATION_INCOMPLETE",
-      reason: "Popolazione del comune non disponibile"
+  it("distingue 'non lo so' da 'non serve'", () => {
+    const result = determine([rule("IT-COM-SCOPE-002", undefined)]);
+    expect(result.requirement).toBe("UNKNOWN");
+    expect(result.requirement).not.toBe("NOT_REQUIRED");
+    expect(result.reason).toMatch(/Nessuna regola/);
+  });
+
+  it("nessuna regola del tutto non e' una conclusione favorevole", () => {
+    expect(determine([]).requirement).toBe("UNKNOWN");
+  });
+
+  it("una regola che non si applica non determina nulla", () => {
+    const result = determine([rule("IT-COM-MAND-REQ-001", "REQUIRED")], {
+      campaign: { electionType: "POLITICAL" }
     });
+    expect(result.requirement).toBe("UNKNOWN");
   });
 });

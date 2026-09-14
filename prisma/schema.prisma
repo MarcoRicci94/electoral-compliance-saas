@@ -4,7 +4,11 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  // Connessione con pool per l'applicazione.
+  url       = env("DATABASE_URL")
+  // Connessione diretta per le migration: il pooler in modalita' transazione
+  // non regge le istruzioni DDL che Prisma esegue durante una migrazione.
+  directUrl = env("DIRECT_URL")
 }
 
 enum UserStatus {
@@ -121,6 +125,14 @@ enum DeadlineStatus {
   CANCELED
 }
 
+enum MandataryRequirement {
+  UNKNOWN
+  REQUIRED
+  NOT_REQUIRED
+  NOT_APPLICABLE
+  EVALUATION_INCOMPLETE
+}
+
 enum MandataryStatus {
   NOT_STARTED
   DATA_COMPLETE
@@ -171,39 +183,41 @@ enum AllocationType {
 }
 
 model User {
-  id              String               @id @default(cuid())
-  email           String               @unique
-  passwordHash    String               @map("password_hash")
-  firstName       String               @map("first_name")
-  lastName        String               @map("last_name")
-  phone           String?
-  status          UserStatus           @default(ACTIVE)
-  emailVerifiedAt DateTime?            @map("email_verified_at")
-  mfaEnabled      Boolean              @default(false) @map("mfa_enabled")
-  createdAt       DateTime             @default(now()) @map("created_at")
-  updatedAt       DateTime             @updatedAt @map("updated_at")
-  lastLoginAt     DateTime?            @map("last_login_at")
-  ownedOrganizations Organization[]    @relation("OrganizationOwner")
+  id                      String               @id @default(cuid())
+  email                   String               @unique
+  passwordHash            String               @map("password_hash")
+  firstName               String               @map("first_name")
+  lastName                String               @map("last_name")
+  phone                   String?
+  status                  UserStatus           @default(ACTIVE)
+  emailVerifiedAt         DateTime?            @map("email_verified_at")
+  mfaEnabled              Boolean              @default(false) @map("mfa_enabled")
+  createdAt               DateTime             @default(now()) @map("created_at")
+  updatedAt               DateTime             @updatedAt @map("updated_at")
+  lastLoginAt             DateTime?            @map("last_login_at")
+  ownedOrganizations      Organization[]       @relation("OrganizationOwner")
   organizationMemberships OrganizationMember[]
-  campaignMemberships CampaignMember[]
-  candidateProfiles CandidateProfile[] @relation("CandidateProfileUser")
-  mandataryProfiles MandataryProfile[]
-  auditEvents     AuditLog[]
+  campaignMemberships     CampaignMember[]
+  candidateProfiles       CandidateProfile[]   @relation("CandidateProfileUser")
+  mandataryProfiles       MandataryProfile[]
+  auditEvents             AuditLog[]
+
   @@map("users")
 }
 
 model Organization {
-  id          String               @id @default(cuid())
-  name        String
-  type        OrganizationType
-  ownerUserId String               @map("owner_user_id")
-  billingStatus String              @default("TRIAL") @map("billing_status")
-  createdAt   DateTime             @default(now()) @map("created_at")
-  updatedAt   DateTime             @updatedAt @map("updated_at")
-  owner       User                 @relation("OrganizationOwner", fields: [ownerUserId], references: [id], onDelete: Restrict)
-  members     OrganizationMember[]
-  campaigns   Campaign[]
-  auditEvents AuditLog[]
+  id            String               @id @default(cuid())
+  name          String
+  type          OrganizationType
+  ownerUserId   String               @map("owner_user_id")
+  billingStatus String               @default("TRIAL") @map("billing_status")
+  createdAt     DateTime             @default(now()) @map("created_at")
+  updatedAt     DateTime             @updatedAt @map("updated_at")
+  owner         User                 @relation("OrganizationOwner", fields: [ownerUserId], references: [id], onDelete: Restrict)
+  members       OrganizationMember[]
+  campaigns     Campaign[]
+  auditEvents   AuditLog[]
+
   @@index([ownerUserId])
   @@map("organizations")
 }
@@ -218,43 +232,51 @@ model OrganizationMember {
   acceptedAt     DateTime?        @map("accepted_at")
   organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([organizationId, userId])
   @@index([userId, status])
   @@map("organization_members")
 }
 
 model Campaign {
-  id                 String          @id @default(cuid())
-  organizationId     String          @map("organization_id")
-  name               String
-  electionId         String?         @map("election_id")
-  territoryId        String?         @map("territory_id")
-  rulesetVersionId   String?         @map("ruleset_version_id")
-  electionType       ElectionType    @map("election_type")
-  officeSought       OfficeSought    @map("office_sought")
-  country            String          @default("IT")
-  region             String?
-  province           String?
-  municipality       String?
-  electionDate       DateTime?       @db.Date @map("election_date")
-  status             CampaignStatus  @default(DRAFT)
-  createdAt          DateTime        @default(now()) @map("created_at")
-  updatedAt          DateTime        @updatedAt @map("updated_at")
-  archivedAt         DateTime?       @map("archived_at")
-  organization       Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  election           Election?       @relation(fields: [electionId], references: [id], onDelete: Restrict)
-  territory          Territory?      @relation(fields: [territoryId], references: [id], onDelete: Restrict)
-  rulesetVersion     RulesetVersion? @relation(fields: [rulesetVersionId], references: [id], onDelete: Restrict)
-  members            CampaignMember[]
-  candidateProfile   CandidateProfile?
-  mandataryProfile   MandataryProfile?
-  auditEvents        AuditLog[]
-  findings           ComplianceFinding[]
-  tasks              Task[]
-  deadlines          Deadline[]
-  contributions      Contribution[]
-  inKindContributions InKindContribution[]
-  expenses           Expense[]
+  id                              String               @id @default(cuid())
+  organizationId                  String               @map("organization_id")
+  name                            String
+  electionId                      String?              @map("election_id")
+  territoryId                     String?              @map("territory_id")
+  rulesetVersionId                String?              @map("ruleset_version_id")
+  electionType                    ElectionType         @map("election_type")
+  officeSought                    OfficeSought         @map("office_sought")
+  country                         String               @default("IT")
+  region                          String?
+  province                        String?
+  municipality                    String?
+  electionDate                    DateTime?            @map("election_date") @db.Date
+  proclamationDate                DateTime?            @map("proclamation_date") @db.Date
+  setupCompletedAt                DateTime?            @map("setup_completed_at")
+  mandataryRequirement            MandataryRequirement @default(UNKNOWN) @map("mandatary_requirement")
+  mandataryRequirementRuleCode    String?              @map("mandatary_requirement_rule_code")
+  mandataryRequirementEvaluatedAt DateTime?            @map("mandatary_requirement_evaluated_at")
+  status                          CampaignStatus       @default(DRAFT)
+  createdAt                       DateTime             @default(now()) @map("created_at")
+  updatedAt                       DateTime             @updatedAt @map("updated_at")
+  archivedAt                      DateTime?            @map("archived_at")
+  organization                    Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  election                        Election?            @relation(fields: [electionId], references: [id], onDelete: Restrict)
+  territory                       Territory?           @relation(fields: [territoryId], references: [id], onDelete: Restrict)
+  rulesetVersion                  RulesetVersion?      @relation(fields: [rulesetVersionId], references: [id], onDelete: Restrict)
+  members                         CampaignMember[]
+  candidateProfile                CandidateProfile?
+  mandataryProfile                MandataryProfile?
+  setup                           CampaignSetup?
+  auditEvents                     AuditLog[]
+  findings                        ComplianceFinding[]
+  tasks                           Task[]
+  deadlines                       Deadline[]
+  contributions                   Contribution[]
+  inKindContributions             InKindContribution[]
+  expenses                        Expense[]
+
   @@index([organizationId, status])
   @@index([electionId])
   @@index([rulesetVersionId])
@@ -262,389 +284,425 @@ model Campaign {
 }
 
 model Donor {
-  id String @id @default(cuid())
-  type DonorType
-  firstName String? @map("first_name")
-  lastName String? @map("last_name")
-  companyName String? @map("company_name")
-  taxCode String? @map("tax_code")
-  vatNumber String? @map("vat_number")
-  country String? @default("IT")
-  address String?
-  email String?
-  pec String?
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  contributions Contribution[]
+  id                  String               @id @default(cuid())
+  type                DonorType
+  firstName           String?              @map("first_name")
+  lastName            String?              @map("last_name")
+  companyName         String?              @map("company_name")
+  taxCode             String?              @map("tax_code")
+  vatNumber           String?              @map("vat_number")
+  country             String?              @default("IT")
+  address             String?
+  email               String?
+  pec                 String?
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @updatedAt @map("updated_at")
+  contributions       Contribution[]
   inKindContributions InKindContribution[] @relation("InKindProvider")
+
   @@index([taxCode])
   @@index([vatNumber])
   @@map("donors")
 }
 
 model Contribution {
-  id String @id @default(cuid())
-  campaignId String @map("campaign_id")
-  donorId String? @map("donor_id")
-  type ContributionType
-  date DateTime @db.Date
-  amount Decimal @db.Decimal(15, 2)
-  currency String @default("EUR")
-  paymentMethod String? @map("payment_method")
-  bankTransactionId String? @map("bank_transaction_id")
-  status ContributionStatus @default(DRAFT)
-  notes String?
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
-  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Restrict)
-  donor Donor? @relation(fields: [donorId], references: [id], onDelete: Restrict)
-  corporateDetails CorporateContributionDetails?
+  id                String                        @id @default(cuid())
+  campaignId        String                        @map("campaign_id")
+  donorId           String?                       @map("donor_id")
+  type              ContributionType
+  date              DateTime                      @db.Date
+  amount            Decimal                       @db.Decimal(15, 2)
+  currency          String                        @default("EUR")
+  paymentMethod     String?                       @map("payment_method")
+  bankTransactionId String?                       @map("bank_transaction_id")
+  status            ContributionStatus            @default(DRAFT)
+  notes             String?
+  createdAt         DateTime                      @default(now()) @map("created_at")
+  updatedAt         DateTime                      @updatedAt @map("updated_at")
+  deletedAt         DateTime?                     @map("deleted_at")
+  campaign          Campaign                      @relation(fields: [campaignId], references: [id], onDelete: Restrict)
+  donor             Donor?                        @relation(fields: [donorId], references: [id], onDelete: Restrict)
+  corporateDetails  CorporateContributionDetails?
+
   @@index([campaignId, date, status])
   @@index([donorId, date])
   @@map("contributions")
 }
 
 model CorporateContributionDetails {
-  contributionId String @id @map("contribution_id")
-  resolutionDate DateTime? @db.Date @map("resolution_date")
-  resolutionDocumentId String? @map("resolution_document_id")
-  corporateBookDocumentId String? @map("corporate_book_document_id")
-  accountingRecordDocumentId String? @map("accounting_record_document_id")
-  journalDocumentId String? @map("journal_document_id")
-  documentationStatus String @default("NOT_STARTED") @map("documentation_status")
-  contribution Contribution @relation(fields: [contributionId], references: [id], onDelete: Cascade)
+  contributionId             String       @id @map("contribution_id")
+  resolutionDate             DateTime?    @map("resolution_date") @db.Date
+  resolutionDocumentId       String?      @map("resolution_document_id")
+  corporateBookDocumentId    String?      @map("corporate_book_document_id")
+  accountingRecordDocumentId String?      @map("accounting_record_document_id")
+  journalDocumentId          String?      @map("journal_document_id")
+  documentationStatus        String       @default("NOT_STARTED") @map("documentation_status")
+  contribution               Contribution @relation(fields: [contributionId], references: [id], onDelete: Cascade)
+
   @@map("corporate_contribution_details")
 }
 
 model InKindContribution {
-  id String @id @default(cuid())
-  campaignId String @map("campaign_id")
-  providerId String? @map("provider_id")
-  type String
-  description String
-  serviceDate DateTime? @db.Date @map("service_date")
-  estimatedValue Decimal @db.Decimal(15, 2) @map("estimated_value")
-  valuationMethod String @map("valuation_method")
-  valuationNotes String? @map("valuation_notes")
-  supportingDocumentId String? @map("supporting_document_id")
-  paidByThirdParty Boolean @default(false) @map("paid_by_third_party")
-  status InKindContributionStatus @default(DRAFT)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Restrict)
-  provider Donor? @relation("InKindProvider", fields: [providerId], references: [id], onDelete: Restrict)
+  id                   String                   @id @default(cuid())
+  campaignId           String                   @map("campaign_id")
+  providerId           String?                  @map("provider_id")
+  type                 String
+  description          String
+  serviceDate          DateTime?                @map("service_date") @db.Date
+  estimatedValue       Decimal                  @map("estimated_value") @db.Decimal(15, 2)
+  valuationMethod      String                   @map("valuation_method")
+  valuationNotes       String?                  @map("valuation_notes")
+  supportingDocumentId String?                  @map("supporting_document_id")
+  paidByThirdParty     Boolean                  @default(false) @map("paid_by_third_party")
+  status               InKindContributionStatus @default(DRAFT)
+  createdAt            DateTime                 @default(now()) @map("created_at")
+  updatedAt            DateTime                 @updatedAt @map("updated_at")
+  campaign             Campaign                 @relation(fields: [campaignId], references: [id], onDelete: Restrict)
+  provider             Donor?                   @relation("InKindProvider", fields: [providerId], references: [id], onDelete: Restrict)
+
   @@index([campaignId, status])
   @@map("in_kind_contributions")
 }
 
 model Supplier {
-  id String @id @default(cuid())
-  name String
-  taxCode String? @map("tax_code")
-  vatNumber String? @map("vat_number")
-  address String?
-  email String?
-  pec String?
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  expenses Expense[]
+  id        String    @id @default(cuid())
+  name      String
+  taxCode   String?   @map("tax_code")
+  vatNumber String?   @map("vat_number")
+  address   String?
+  email     String?
+  pec       String?
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  expenses  Expense[]
+
   @@index([vatNumber])
   @@map("suppliers")
 }
 
 model Expense {
-  id String @id @default(cuid())
-  campaignId String @map("campaign_id")
-  supplierId String? @map("supplier_id")
-  expenseDate DateTime @db.Date @map("expense_date")
-  description String
-  legalCategory String @map("legal_category")
-  subcategory String?
-  grossAmount Decimal @db.Decimal(15, 2) @map("gross_amount")
-  netAmount Decimal? @db.Decimal(15, 2) @map("net_amount")
-  vatAmount Decimal? @db.Decimal(15, 2) @map("vat_amount")
-  relevantAmountForLimit Decimal @db.Decimal(15, 2) @map("relevant_amount_for_limit")
-  paidAmount Decimal @default(0) @db.Decimal(15, 2) @map("paid_amount")
-  outstandingAmount Decimal @db.Decimal(15, 2) @map("outstanding_amount")
-  status ExpenseStatus @default(DRAFT)
-  invoiceDocumentId String? @map("invoice_document_id")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
-  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Restrict)
-  supplier Supplier? @relation(fields: [supplierId], references: [id], onDelete: Restrict)
-  allocations ExpenseAllocation[]
+  id                     String              @id @default(cuid())
+  campaignId             String              @map("campaign_id")
+  supplierId             String?             @map("supplier_id")
+  expenseDate            DateTime            @map("expense_date") @db.Date
+  description            String
+  legalCategory          String              @map("legal_category")
+  subcategory            String?
+  grossAmount            Decimal             @map("gross_amount") @db.Decimal(15, 2)
+  netAmount              Decimal?            @map("net_amount") @db.Decimal(15, 2)
+  vatAmount              Decimal?            @map("vat_amount") @db.Decimal(15, 2)
+  relevantAmountForLimit Decimal             @map("relevant_amount_for_limit") @db.Decimal(15, 2)
+  paidAmount             Decimal             @default(0) @map("paid_amount") @db.Decimal(15, 2)
+  outstandingAmount      Decimal             @map("outstanding_amount") @db.Decimal(15, 2)
+  status                 ExpenseStatus       @default(DRAFT)
+  invoiceDocumentId      String?             @map("invoice_document_id")
+  createdAt              DateTime            @default(now()) @map("created_at")
+  updatedAt              DateTime            @updatedAt @map("updated_at")
+  deletedAt              DateTime?           @map("deleted_at")
+  campaign               Campaign            @relation(fields: [campaignId], references: [id], onDelete: Restrict)
+  supplier               Supplier?           @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  allocations            ExpenseAllocation[]
+
   @@index([campaignId, expenseDate, status])
   @@map("expenses")
 }
 
 model ExpenseAllocation {
-  id String @id @default(cuid())
-  expenseId String @map("expense_id")
-  campaignId String @map("campaign_id")
+  id             String         @id @default(cuid())
+  expenseId      String         @map("expense_id")
+  campaignId     String         @map("campaign_id")
   allocationType AllocationType @map("allocation_type")
-  percentage Decimal? @db.Decimal(7, 4)
-  amount Decimal? @db.Decimal(15, 2)
-  reason String
-  createdAt DateTime @default(now()) @map("created_at")
-  expense Expense @relation(fields: [expenseId], references: [id], onDelete: Restrict)
+  percentage     Decimal?       @db.Decimal(7, 4)
+  amount         Decimal?       @db.Decimal(15, 2)
+  reason         String
+  createdAt      DateTime       @default(now()) @map("created_at")
+  expense        Expense        @relation(fields: [expenseId], references: [id], onDelete: Restrict)
+
   @@index([campaignId])
   @@map("expense_allocations")
 }
 
+model CampaignSetup {
+  campaignId                     String   @id @map("campaign_id")
+  expectsOwnSpending             Boolean  @default(false) @map("expects_own_spending")
+  plannedOwnSpending             Decimal? @map("planned_own_spending") @db.Decimal(15, 2)
+  expectsThirdPartyContributions Boolean  @default(false) @map("expects_third_party_contributions")
+  expectsPartyOrListSupport      Boolean  @default(false) @map("expects_party_or_list_support")
+  expectsInKindContributions     Boolean  @default(false) @map("expects_in_kind_contributions")
+  plannedTotalSpending           Decimal? @map("planned_total_spending") @db.Decimal(15, 2)
+  declaredByUserId               String   @map("declared_by_user_id")
+  declaredAt                     DateTime @default(now()) @map("declared_at")
+  updatedAt                      DateTime @updatedAt @map("updated_at")
+  campaign                       Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@map("campaign_setups")
+}
+
 model MandataryProfile {
-  id String @id @default(cuid())
-  campaignId String @unique @map("campaign_id")
-  userId String? @map("user_id")
-  firstName String @map("first_name")
-  lastName String @map("last_name")
-  taxCode String? @map("tax_code")
-  birthDate DateTime? @db.Date @map("birth_date")
-  birthPlace String? @map("birth_place")
-  residence String?
-  pec String?
-  email String?
-  phone String?
-  appointmentDate DateTime? @db.Date @map("appointment_date")
-  status MandataryStatus @default(NOT_STARTED)
-  identityDocumentId String? @map("identity_document_id")
-  appointmentDocumentId String? @map("appointment_document_id")
-  submissionReceiptId String? @map("submission_receipt_id")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Restrict)
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  id                    String          @id @default(cuid())
+  campaignId            String          @unique @map("campaign_id")
+  userId                String?         @map("user_id")
+  firstName             String          @map("first_name")
+  lastName              String          @map("last_name")
+  taxCode               String?         @map("tax_code")
+  birthDate             DateTime?       @map("birth_date") @db.Date
+  birthPlace            String?         @map("birth_place")
+  residence             String?
+  pec                   String?
+  email                 String?
+  phone                 String?
+  appointmentDate       DateTime?       @map("appointment_date") @db.Date
+  status                MandataryStatus @default(NOT_STARTED)
+  identityDocumentId    String?         @map("identity_document_id")
+  appointmentDocumentId String?         @map("appointment_document_id")
+  submissionReceiptId   String?         @map("submission_receipt_id")
+  createdAt             DateTime        @default(now()) @map("created_at")
+  updatedAt             DateTime        @updatedAt @map("updated_at")
+  campaign              Campaign        @relation(fields: [campaignId], references: [id], onDelete: Restrict)
+  user                  User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+
   @@index([userId])
   @@index([taxCode])
   @@map("mandatary_profiles")
 }
 
 model Territory {
-  id String @id @default(cuid())
-  type String
-  istatCode String? @unique @map("istat_code")
-  name String
-  parentId String? @map("parent_id")
-  population Int?
-  populationReferenceDate DateTime? @db.Date @map("population_reference_date")
-  registeredVoters Int? @map("registered_voters")
-  registeredVotersReferenceDate DateTime? @db.Date @map("registered_voters_reference_date")
-  source String?
-  sourceVerifiedAt DateTime? @map("source_verified_at")
-  parent Territory? @relation("TerritoryHierarchy", fields: [parentId], references: [id])
-  children Territory[] @relation("TerritoryHierarchy")
-  campaigns Campaign[]
+  id                            String      @id @default(cuid())
+  type                          String
+  istatCode                     String?     @unique @map("istat_code")
+  name                          String
+  parentId                      String?     @map("parent_id")
+  population                    Int?
+  populationReferenceDate       DateTime?   @map("population_reference_date") @db.Date
+  registeredVoters              Int?        @map("registered_voters")
+  registeredVotersReferenceDate DateTime?   @map("registered_voters_reference_date") @db.Date
+  source                        String?
+  sourceVerifiedAt              DateTime?   @map("source_verified_at")
+  parent                        Territory?  @relation("TerritoryHierarchy", fields: [parentId], references: [id])
+  children                      Territory[] @relation("TerritoryHierarchy")
+  campaigns                     Campaign[]
+
   @@index([parentId])
   @@map("territories")
 }
 
 model Election {
-  id String @id @default(cuid())
-  type ElectionType
-  name String
-  electionDate DateTime @db.Date @map("election_date")
-  runoffDate DateTime? @db.Date @map("runoff_date")
-  callDate DateTime? @db.Date @map("call_date")
-  candidateSubmissionDeadline DateTime? @db.Date @map("candidate_submission_deadline")
-  country String @default("IT")
-  region String?
-  province String?
-  municipality String?
-  population Int?
-  populationReferenceDate DateTime? @db.Date @map("population_reference_date")
-  registeredVoters Int? @map("registered_voters")
-  registeredVotersReferenceDate DateTime? @db.Date @map("registered_voters_reference_date")
-  officialSourceUrl String? @map("official_source_url")
-  sourceVerifiedAt DateTime? @map("source_verified_at")
-  status String @default("DRAFT")
-  campaigns Campaign[]
+  id                            String       @id @default(cuid())
+  type                          ElectionType
+  name                          String
+  electionDate                  DateTime     @map("election_date") @db.Date
+  runoffDate                    DateTime?    @map("runoff_date") @db.Date
+  callDate                      DateTime?    @map("call_date") @db.Date
+  candidateSubmissionDeadline   DateTime?    @map("candidate_submission_deadline") @db.Date
+  country                       String       @default("IT")
+  region                        String?
+  province                      String?
+  municipality                  String?
+  population                    Int?
+  populationReferenceDate       DateTime?    @map("population_reference_date") @db.Date
+  registeredVoters              Int?         @map("registered_voters")
+  registeredVotersReferenceDate DateTime?    @map("registered_voters_reference_date") @db.Date
+  officialSourceUrl             String?      @map("official_source_url")
+  sourceVerifiedAt              DateTime?    @map("source_verified_at")
+  status                        String       @default("DRAFT")
+  campaigns                     Campaign[]
+
   @@index([type, electionDate])
   @@map("elections")
 }
 
 model LegalSource {
-  id String @id @default(cuid())
-  sourceType LegalSourceType @map("source_type")
-  title String
-  lawNumber String? @map("law_number")
-  lawDate DateTime? @db.Date @map("law_date")
-  article String?
-  paragraph String?
-  authority String?
-  officialUrl String? @map("official_url")
-  effectiveFrom DateTime? @db.Date @map("effective_from")
-  effectiveTo DateTime? @db.Date @map("effective_to")
-  textExcerpt String? @map("text_excerpt")
-  verifiedAt DateTime? @map("verified_at")
-  verifiedBy String? @map("verified_by")
-  rules ComplianceRule[]
+  id            String           @id @default(cuid())
+  sourceType    LegalSourceType  @map("source_type")
+  title         String
+  lawNumber     String?          @map("law_number")
+  lawDate       DateTime?        @map("law_date") @db.Date
+  article       String?
+  paragraph     String?
+  authority     String?
+  officialUrl   String?          @map("official_url")
+  effectiveFrom DateTime?        @map("effective_from") @db.Date
+  effectiveTo   DateTime?        @map("effective_to") @db.Date
+  textExcerpt   String?          @map("text_excerpt")
+  verifiedAt    DateTime?        @map("verified_at")
+  verifiedBy    String?          @map("verified_by")
+  rules         ComplianceRule[]
+
   @@map("legal_sources")
 }
 
 model RulesetVersion {
-  id String @id @default(cuid())
-  name String
-  jurisdiction String
-  electionType ElectionType @map("election_type")
-  version String
-  effectiveFrom DateTime @db.Date @map("effective_from")
-  effectiveTo DateTime? @db.Date @map("effective_to")
-  status RulesetStatus @default(DRAFT)
-  reviewedBy String? @map("reviewed_by")
-  reviewedAt DateTime? @map("reviewed_at")
-  createdAt DateTime @default(now()) @map("created_at")
-  rules ComplianceRule[]
-  parameters RuleParameter[]
-  campaigns Campaign[]
+  id            String           @id @default(cuid())
+  name          String
+  jurisdiction  String
+  electionType  ElectionType     @map("election_type")
+  version       String
+  effectiveFrom DateTime         @map("effective_from") @db.Date
+  effectiveTo   DateTime?        @map("effective_to") @db.Date
+  status        RulesetStatus    @default(DRAFT)
+  reviewedBy    String?          @map("reviewed_by")
+  reviewedAt    DateTime?        @map("reviewed_at")
+  createdAt     DateTime         @default(now()) @map("created_at")
+  rules         ComplianceRule[]
+  parameters    RuleParameter[]
+  campaigns     Campaign[]
+
   @@unique([jurisdiction, electionType, version])
   @@map("ruleset_versions")
 }
 
 model RuleParameter {
-  id String @id @default(cuid())
-  rulesetVersionId String @map("ruleset_version_id")
-  code String
-  value Json
-  unit String?
-  legalSourceId String? @map("legal_source_id")
-  rulesetVersion RulesetVersion @relation(fields: [rulesetVersionId], references: [id], onDelete: Cascade)
+  id               String         @id @default(cuid())
+  rulesetVersionId String         @map("ruleset_version_id")
+  code             String
+  value            Json
+  unit             String?
+  legalSourceId    String?        @map("legal_source_id")
+  rulesetVersion   RulesetVersion @relation(fields: [rulesetVersionId], references: [id], onDelete: Cascade)
+
   @@unique([rulesetVersionId, code])
   @@map("rule_parameters")
 }
 
 model ComplianceRule {
-  id String @id @default(cuid())
-  rulesetVersionId String @map("ruleset_version_id")
-  ruleCode String @map("rule_code")
-  name String
-  description String
-  category String
-  severityDefault FindingSeverity @map("severity_default")
-  conditionExpression Json @map("condition_expression")
-  effectType String @map("effect_type")
-  effectPayload Json @map("effect_payload")
-  legalSourceId String? @map("legal_source_id")
-  effectiveFrom DateTime? @db.Date @map("effective_from")
-  effectiveTo DateTime? @db.Date @map("effective_to")
-  isActive Boolean @default(false) @map("is_active")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  rulesetVersion RulesetVersion @relation(fields: [rulesetVersionId], references: [id], onDelete: Cascade)
-  legalSource LegalSource? @relation(fields: [legalSourceId], references: [id], onDelete: Restrict)
-  findings ComplianceFinding[]
-  deadlines Deadline[]
+  id                  String              @id @default(cuid())
+  rulesetVersionId    String              @map("ruleset_version_id")
+  ruleCode            String              @map("rule_code")
+  name                String
+  description         String
+  category            String
+  severityDefault     FindingSeverity     @map("severity_default")
+  conditionExpression Json                @map("condition_expression")
+  effectType          String              @map("effect_type")
+  effectPayload       Json                @map("effect_payload")
+  legalSourceId       String?             @map("legal_source_id")
+  effectiveFrom       DateTime?           @map("effective_from") @db.Date
+  effectiveTo         DateTime?           @map("effective_to") @db.Date
+  isActive            Boolean             @default(false) @map("is_active")
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+  rulesetVersion      RulesetVersion      @relation(fields: [rulesetVersionId], references: [id], onDelete: Cascade)
+  legalSource         LegalSource?        @relation(fields: [legalSourceId], references: [id], onDelete: Restrict)
+  findings            ComplianceFinding[]
+  deadlines           Deadline[]
+
   @@unique([rulesetVersionId, ruleCode])
   @@index([rulesetVersionId, isActive])
   @@map("compliance_rules")
 }
 
 model ComplianceFinding {
-  id String @id @default(cuid())
-  campaignId String @map("campaign_id")
-  ruleId String @map("rule_id")
-  entityType String? @map("entity_type")
-  entityId String? @map("entity_id")
-  severity FindingSeverity
-  status FindingStatus @default(OPEN)
-  title String
-  description String
-  detectedAt DateTime @default(now()) @map("detected_at")
-  resolvedAt DateTime? @map("resolved_at")
-  resolutionMethod String? @map("resolution_method")
-  overrideReason String? @map("override_reason")
-  overriddenBy String? @map("overridden_by")
-  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Restrict)
-  rule ComplianceRule @relation(fields: [ruleId], references: [id], onDelete: Restrict)
+  id               String          @id @default(cuid())
+  campaignId       String          @map("campaign_id")
+  ruleId           String          @map("rule_id")
+  entityType       String?         @map("entity_type")
+  entityId         String?         @map("entity_id")
+  severity         FindingSeverity
+  status           FindingStatus   @default(OPEN)
+  title            String
+  description      String
+  detectedAt       DateTime        @default(now()) @map("detected_at")
+  resolvedAt       DateTime?       @map("resolved_at")
+  resolutionMethod String?         @map("resolution_method")
+  overrideReason   String?         @map("override_reason")
+  overriddenBy     String?         @map("overridden_by")
+  campaign         Campaign        @relation(fields: [campaignId], references: [id], onDelete: Restrict)
+  rule             ComplianceRule  @relation(fields: [ruleId], references: [id], onDelete: Restrict)
+
   @@index([campaignId, status, severity])
   @@map("compliance_findings")
 }
 
 model Task {
-  id String @id @default(cuid())
-  campaignId String @map("campaign_id")
-  sourceType TaskSourceType @map("source_type")
-  sourceId String? @map("source_id")
-  title String
+  id          String          @id @default(cuid())
+  campaignId  String          @map("campaign_id")
+  sourceType  TaskSourceType  @map("source_type")
+  sourceId    String?         @map("source_id")
+  title       String
   description String
-  priority FindingSeverity
-  status TaskStatus @default(OPEN)
-  assignedTo String? @map("assigned_to")
-  dueAt DateTime? @map("due_at")
-  completedAt DateTime? @map("completed_at")
-  createdAt DateTime @default(now()) @map("created_at")
-  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Restrict)
+  priority    FindingSeverity
+  status      TaskStatus      @default(OPEN)
+  assignedTo  String?         @map("assigned_to")
+  dueAt       DateTime?       @map("due_at")
+  completedAt DateTime?       @map("completed_at")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  campaign    Campaign        @relation(fields: [campaignId], references: [id], onDelete: Restrict)
+
   @@index([campaignId, status, dueAt])
   @@map("tasks")
 }
 
 model Deadline {
-  id String @id @default(cuid())
-  campaignId String @map("campaign_id")
-  ruleId String? @map("rule_id")
-  name String
-  triggerEvent String @map("trigger_event")
-  triggerDate DateTime? @db.Date @map("trigger_date")
-  offsetDefinition String @map("offset_definition")
-  calculatedDueDate DateTime? @db.Date @map("calculated_due_date")
-  status DeadlineStatus @default(PENDING)
-  source String
-  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Restrict)
-  rule ComplianceRule? @relation(fields: [ruleId], references: [id], onDelete: Restrict)
+  id                String          @id @default(cuid())
+  campaignId        String          @map("campaign_id")
+  ruleId            String?         @map("rule_id")
+  name              String
+  triggerEvent      String          @map("trigger_event")
+  triggerDate       DateTime?       @map("trigger_date") @db.Date
+  offsetDefinition  String          @map("offset_definition")
+  calculatedDueDate DateTime?       @map("calculated_due_date") @db.Date
+  status            DeadlineStatus  @default(PENDING)
+  source            String
+  campaign          Campaign        @relation(fields: [campaignId], references: [id], onDelete: Restrict)
+  rule              ComplianceRule? @relation(fields: [ruleId], references: [id], onDelete: Restrict)
+
   @@index([campaignId, status, calculatedDueDate])
   @@map("deadlines")
 }
 
 model CampaignMember {
-  id                  String       @id @default(cuid())
-  campaignId          String       @map("campaign_id")
-  userId              String       @map("user_id")
+  id                  String           @id @default(cuid())
+  campaignId          String           @map("campaign_id")
+  userId              String           @map("user_id")
   role                CampaignRole
-  permissionsOverride Json?        @map("permissions_override")
+  permissionsOverride Json?            @map("permissions_override")
   status              MembershipStatus @default(INVITED)
-  joinedAt            DateTime?    @map("joined_at")
-  campaign            Campaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  user                User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt            DateTime?        @map("joined_at")
+  campaign            Campaign         @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user                User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([campaignId, userId])
   @@index([userId, status])
   @@map("campaign_members")
 }
 
 model CandidateProfile {
-  id          String   @id @default(cuid())
-  campaignId  String   @unique @map("campaign_id")
-  userId      String   @map("user_id")
-  firstName   String   @map("first_name")
-  lastName    String   @map("last_name")
-  email       String?
-  phone       String?
-  politicalParty String? @map("political_party")
-  listName    String?  @map("list_name")
-  coalitionName String? @map("coalition_name")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  user        User     @relation("CandidateProfileUser", fields: [userId], references: [id], onDelete: Restrict)
+  id             String   @id @default(cuid())
+  campaignId     String   @unique @map("campaign_id")
+  userId         String   @map("user_id")
+  firstName      String   @map("first_name")
+  lastName       String   @map("last_name")
+  email          String?
+  phone          String?
+  politicalParty String?  @map("political_party")
+  listName       String?  @map("list_name")
+  coalitionName  String?  @map("coalition_name")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  campaign       Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user           User     @relation("CandidateProfileUser", fields: [userId], references: [id], onDelete: Restrict)
+
   @@index([userId])
   @@map("candidate_profiles")
 }
 
 model AuditLog {
-  id             String        @id @default(cuid())
-  organizationId String        @map("organization_id")
-  campaignId     String?       @map("campaign_id")
-  userId         String?       @map("user_id")
+  id             String       @id @default(cuid())
+  organizationId String       @map("organization_id")
+  campaignId     String?      @map("campaign_id")
+  userId         String?      @map("user_id")
   action         String
-  entityType     String        @map("entity_type")
-  entityId       String        @map("entity_id")
-  beforeJson     Json?         @map("before_json")
-  afterJson      Json?         @map("after_json")
-  ipAddress      String?       @map("ip_address")
-  userAgent      String?       @map("user_agent")
-  createdAt      DateTime      @default(now()) @map("created_at")
-  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  campaign       Campaign?     @relation(fields: [campaignId], references: [id], onDelete: Restrict)
-  user           User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  entityType     String       @map("entity_type")
+  entityId       String       @map("entity_id")
+  beforeJson     Json?        @map("before_json")
+  afterJson      Json?        @map("after_json")
+  ipAddress      String?      @map("ip_address")
+  userAgent      String?      @map("user_agent")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  campaign       Campaign?    @relation(fields: [campaignId], references: [id], onDelete: Restrict)
+  user           User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
   @@index([organizationId, createdAt])
   @@index([campaignId, createdAt])
   @@map("audit_logs")

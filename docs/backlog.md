@@ -68,22 +68,34 @@ Da fare:
   colonna, quindi le scadenze del rendiconto restano inerti. Richiede una migration
   e arriva con la Milestone 3.
 
-## Milestone 3 — wizard e mandatario (parziale)
+## Milestone 3 — wizard e mandatario (completa)
 
-Fatto:
+- Questionario iniziale (`CampaignSetup`) con migration dedicata, piu'
+  `Campaign.proclamationDate` e il regime del mandatario memorizzato insieme alle
+  regole che lo hanno prodotto e al momento della determinazione.
+- La determinazione del regime viene dalle regole, non dal codice: una regola lo
+  dichiara con `determinesMandatary` e porta con se' la propria fonte. Il modulo
+  si limita a raccogliere e a rifiutare di concludere quando le regole sono in
+  conflitto, quando una non e' valutabile o quando nessuna si e' pronunciata.
+- Le regole di determinazione leggono sia le dichiarazioni sia i fatti gia'
+  registrati: un contributo di terzi incassato da chi si era dichiarato
+  autofinanziato ribalta il regime subito.
+- Rivalutazione automatica alla registrazione di un contributo. Se fallisce, il
+  contributo resta comunque registrato e il chiamante lo viene a sapere.
+- Anagrafica territoriale collegabile alla campagna, con ricerca dei comuni.
+- Data di proclamazione: registrarla ricalcola le scadenze e produce il termine
+  del rendiconto.
+- Stato del wizard con i passaggi mancanti e chiusura dell'apertura campagna.
+- Test end-to-end sul database reale: comune, questionario, ribaltamento del
+  regime, rilievo bloccante, attivita', registro delle operazioni e termine a tre
+  mesi calcolato sul giorno giusto.
 
-- `MandataryProfile` con upsert e audit; invito di un mandatario già registrato.
-- Funzione pura di determinazione del regime e bozza di template documentale.
+Da fare in seguito:
 
-Da fare:
-
-- Wizard di onboarding: elezione, territorio, ruolo, anagrafica, questionario
-  finanziario.
-- Determinazione del regime tramite Rules Engine anziché input precalcolato.
-- Rivalutazione automatica quando cambiano le condizioni di fatto (per esempio un
-  contributo di terzi in un regime dichiarato autofinanziato).
 - Invito di un mandatario non ancora registrato, che oggi fallisce con
-  `INVITATION_DELIVERY_NOT_CONFIGURED` perché manca il provider email.
+  `INVITATION_DELIVERY_NOT_CONFIGURED` perche' manca il provider email.
+- Generazione del documento di nomina: oggi esiste solo una bozza di template.
+- Interfaccia del wizard: esistono i servizi e le rotte API, non le pagine.
 
 ## Milestone 4 — finance (parziale)
 

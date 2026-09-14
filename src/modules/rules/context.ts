@@ -34,11 +34,10 @@ export type CampaignRuleContext = {
     municipality?: string;
     electionDate?: string;
     /**
-     * Data di proclamazione: fa decorrere il termine per il rendiconto. Lo schema
-     * non ha ancora la colonna corrispondente, quindi il campo e' dichiarato ma
-     * sempre assente. Le regole che ne dipendono devono condizionarsi con
-     * `exists`, cosi' restano inerti finche' il dato non c'e' invece di calcolare
-     * una scadenza su un evento mai avvenuto.
+     * Data di proclamazione: fa decorrere il termine per il rendiconto. Finche'
+     * non e' valorizzata, le regole che ne dipendono devono condizionarsi con
+     * `exists` e restare inerti, invece di calcolare una scadenza su un evento
+     * mai avvenuto.
      */
     proclamationDate?: string;
     hasCandidateProfile: boolean;
@@ -60,6 +59,20 @@ export type CampaignRuleContext = {
     population?: number;
     registeredVoters?: number;
     hasVerifiedSource: boolean;
+  };
+  /**
+   * Dichiarazioni rese dal candidato nel questionario iniziale. Sono previsioni,
+   * non fatti registrati: servono a determinare il regime di partenza. Quando i
+   * fatti le smentiscono, sono i fatti a prevalere e il regime va rivalutato.
+   */
+  setup: {
+    declared: boolean;
+    expectsOwnSpending: boolean;
+    plannedOwnSpending?: string;
+    expectsThirdPartyContributions: boolean;
+    expectsPartyOrListSupport: boolean;
+    expectsInKindContributions: boolean;
+    plannedTotalSpending?: string;
   };
   /**
    * Popolazione ed elettori iscritti gia' risolti fra elezione e territorio, con
@@ -115,6 +128,7 @@ const campaignInclude = {
   election: true,
   territory: true,
   mandataryProfile: true,
+  setup: true,
   candidateProfile: { select: { id: true } }
 } satisfies Prisma.CampaignInclude;
 
@@ -249,6 +263,7 @@ function assemble(
   const election = campaign.election;
   const territory = campaign.territory;
   const mandatary = campaign.mandataryProfile;
+  const setup = campaign.setup;
 
   return {
     today: formatLegalDate(evaluationDate),
@@ -261,7 +276,7 @@ function assemble(
       province: optionalText(campaign.province),
       municipality: optionalText(campaign.municipality),
       electionDate: optionalDate(campaign.electionDate),
-      proclamationDate: undefined,
+      proclamationDate: optionalDate(campaign.proclamationDate),
       hasCandidateProfile: campaign.candidateProfile !== null,
       isZeroCampaign: !finance.hasAnyRecord
     },
@@ -281,6 +296,15 @@ function assemble(
       population: optionalNumber(territory?.population),
       registeredVoters: optionalNumber(territory?.registeredVoters),
       hasVerifiedSource: Boolean(territory?.sourceVerifiedAt)
+    },
+    setup: {
+      declared: setup !== null,
+      expectsOwnSpending: setup?.expectsOwnSpending ?? false,
+      plannedOwnSpending: setup?.plannedOwnSpending?.toFixed(2),
+      expectsThirdPartyContributions: setup?.expectsThirdPartyContributions ?? false,
+      expectsPartyOrListSupport: setup?.expectsPartyOrListSupport ?? false,
+      expectsInKindContributions: setup?.expectsInKindContributions ?? false,
+      plannedTotalSpending: setup?.plannedTotalSpending?.toFixed(2)
     },
     demographics: resolveDemographics(
       election

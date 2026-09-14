@@ -16,7 +16,8 @@ import {
   parseFindingEffect,
   parseTaskEffect,
   severityValues,
-  type EffectType
+  type EffectType,
+  type MandataryDeterminationValue
 } from "@/modules/rules/effects";
 
 /**
@@ -50,6 +51,7 @@ export type ProducedFinding = {
   title: string;
   description: string;
   entityType?: string;
+  determinesMandatary?: MandataryDeterminationValue;
 };
 
 export type ProducedTask = {
@@ -139,7 +141,8 @@ function produceEffect(
       severity: effect.severity ?? rule.severityDefault ?? defaultSeverityFor(effectType),
       title: effect.title,
       description: effect.description,
-      entityType: effect.entityType
+      entityType: effect.entityType,
+      determinesMandatary: effect.determinesMandatary
     };
   }
 
