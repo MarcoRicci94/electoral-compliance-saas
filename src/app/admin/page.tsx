@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { HttpError } from "@/lib/http";
 import { getSession } from "@/modules/auth/session";
@@ -41,13 +42,21 @@ export default async function AdminPage() {
 
   return (
     <main className="min-h-screen bg-slate-50 p-6 md:p-10">
-      <header>
-        <p className="text-sm text-slate-500">Back-office</p>
-        <h1 className="text-3xl font-semibold">Abbonati</h1>
-        <p className="mt-2 max-w-2xl text-sm text-slate-600">
-          Chi si e&apos; registrato e in che stato e&apos; il suo abbonamento. Da qui non si accede
-          al contenuto delle campagne.
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p className="text-sm text-slate-500">Back-office</p>
+          <h1 className="text-3xl font-semibold">Abbonati</h1>
+          <p className="mt-2 max-w-2xl text-sm text-slate-600">
+            Chi si e&apos; registrato e in che stato e&apos; il suo abbonamento. Da qui non si
+            accede al contenuto delle campagne.
+          </p>
+        </div>
+        <Link
+          className="rounded-md border bg-white px-4 py-2 text-sm font-medium"
+          href="/admin/regole"
+        >
+          Console legale
+        </Link>
       </header>
 
       <section className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

@@ -48,10 +48,9 @@ Fatto:
 
 Da fare:
 
-- Console legale di amministrazione e rule tester come interfaccia. Il servizio
-  `testRuleset` esiste gia' e usa lo stesso valutatore del percorso di produzione;
-  manca la pagina. Va costruita insieme al ruolo di amministratore di piattaforma
-  della Milestone 11, perche' oggi non esiste un ruolo a cui riservarla.
+- Rule tester come interfaccia: il servizio `testRuleset` esiste e usa lo stesso
+  valutatore del percorso di produzione, manca la pagina che lo espone. La console
+  legale (verifica delle fonti e attivazione) e' stata costruita.
 - Elettori iscritti nelle liste elettorali. L'anagrafica comunale e' caricata
   (7.896 comuni con popolazione residente, 734 sopra i 15.000 abitanti), quindi la
   soglia demografica e' calcolabile. I limiti di spesa no: sono parametrati agli
@@ -170,9 +169,25 @@ Da fare:
   motivazione, durata limitata, traccia nel registro e visibilita' all'utente.
 - Pagina di gestione dell'abbonamento lato cliente.
 
+## Console legale — fatta
+
+- Elenco dei ruleset con stato e conteggio delle regole attive.
+- Verifica delle fonti normative: registra autore, data e link al testo ufficiale.
+- Attivazione delle singole regole e dell'intero ruleset, riservata al ruolo
+  `PLATFORM_ADMIN`.
+- Controlli di attivazione: almeno una regola attiva, ogni regola attiva collegata
+  a una fonte verificata da una persona, condizioni valide per il motore, effetti
+  completi, termini delle scadenze analizzabili, parametri citati dai calcoli
+  presenti nel ruleset. La nota di revisione e' obbligatoria e resta agli atti.
+- Un ruleset attivo non e' piu' modificabile: per cambiarlo si crea una nuova
+  versione, e quella precedente viene marcata come superata.
+
 ## Decisioni bloccanti
 
 - Approvazione di un revisore legale e fonti ufficiali prima di attivare i seed.
+  Il percorso tecnico esiste ed e' presidiato dai controlli sopra; resta da
+  compiere l'atto, che richiede di verificare i parametri sulle fonti ufficiali.
+  Finche' non avviene, le campagne vedono "regime non ancora determinato".
 - Scelta dei fornitori di hosting, database gestito, object storage, email, OCR/AI,
   antimalware, Open Banking e incasso pagamenti prima di abilitare gli adapter di
   produzione. Tutti devono offrire trattamento dei dati in UE e un accordo ex art. 28

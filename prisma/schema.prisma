@@ -791,21 +791,24 @@ model CandidateProfile {
 }
 
 model AuditLog {
-  id             String       @id @default(cuid())
-  organizationId String       @map("organization_id")
-  campaignId     String?      @map("campaign_id")
-  userId         String?      @map("user_id")
+  id             String        @id @default(cuid())
+  /// Nullo per le azioni di piattaforma, che non appartengono a un'organizzazione:
+  /// l'attivazione di un ruleset o la verifica di una fonte normativa riguardano
+  /// tutti i tenant e non uno in particolare.
+  organizationId String?       @map("organization_id")
+  campaignId     String?       @map("campaign_id")
+  userId         String?       @map("user_id")
   action         String
-  entityType     String       @map("entity_type")
-  entityId       String       @map("entity_id")
-  beforeJson     Json?        @map("before_json")
-  afterJson      Json?        @map("after_json")
-  ipAddress      String?      @map("ip_address")
-  userAgent      String?      @map("user_agent")
-  createdAt      DateTime     @default(now()) @map("created_at")
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  campaign       Campaign?    @relation(fields: [campaignId], references: [id], onDelete: Restrict)
-  user           User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  entityType     String        @map("entity_type")
+  entityId       String        @map("entity_id")
+  beforeJson     Json?         @map("before_json")
+  afterJson      Json?         @map("after_json")
+  ipAddress      String?       @map("ip_address")
+  userAgent      String?       @map("user_agent")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  campaign       Campaign?     @relation(fields: [campaignId], references: [id], onDelete: Restrict)
+  user           User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([organizationId, createdAt])
   @@index([campaignId, createdAt])
