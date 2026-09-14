@@ -13,14 +13,15 @@
     "format": "prettier --check --ignore-unknown README.md AGENTS.md .env.example docs src prisma package.json tsconfig.json next.config.ts eslint.config.mjs postcss.config.mjs vitest.config.ts",
     "format:write": "prettier --write --ignore-unknown README.md AGENTS.md .env.example docs src prisma package.json tsconfig.json next.config.ts eslint.config.mjs postcss.config.mjs vitest.config.ts",
     "typecheck": "node scripts/typecheck.mjs",
-    "test": "node --experimental-strip-types scripts/test-unit.mjs",
-    "test:integration": "node scripts/test-integration.mjs",
-    "test:rules": "node --experimental-strip-types scripts/test-rules.mjs",
-    "test:all": "npm run test && npm run test:integration && npm run test:rules",
+    "test": "vitest run --project unit --project rules",
+    "test:integration": "vitest run --project integration",
+    "test:rules": "vitest run --project rules",
+    "test:all": "npm run test && npm run test:integration",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
-    "db:seed:development": "node scripts/seed-development.mjs"
+    "db:seed:development": "node scripts/seed-development.mjs",
+    "test:watch": "vitest --project unit --project rules"
   },
   "dependencies": {
     "@prisma/client": "^6.7.0",
