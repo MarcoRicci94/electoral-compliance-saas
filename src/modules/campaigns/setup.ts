@@ -243,6 +243,16 @@ export async function getSetupStatus(
   if (!campaign) throw new HttpError(404, "CAMPAIGN_NOT_FOUND", "Campagna non trovata");
 
   const mandataryNeeded = campaign.mandataryRequirement === MandataryRequirement.REQUIRED;
+  /**
+   * Un passaggio e' concluso solo se il regime e' stato davvero determinato. Con
+   * `UNKNOWN` o `EVALUATION_INCOMPLETE` non lo e': mostrare comunque una spunta
+   * verde farebbe leggere "non ti serve il mandatario" a chi invece non ha
+   * ricevuto nessuna risposta. E' il fraintendimento piu' costoso che questa
+   * schermata possa produrre.
+   */
+  const mandataryDetermined =
+    campaign.mandataryRequirement === MandataryRequirement.NOT_REQUIRED ||
+    campaign.mandataryRequirement === MandataryRequirement.NOT_APPLICABLE;
   const steps = [
     {
       key: "CANDIDATE",
@@ -265,7 +275,7 @@ export async function getSetupStatus(
     {
       key: "MANDATARY",
       label: "Mandatario elettorale",
-      done: !mandataryNeeded || campaign.mandataryProfile !== null,
+      done: mandataryDetermined || (mandataryNeeded && campaign.mandataryProfile !== null),
       blocking: mandataryNeeded
     }
   ];

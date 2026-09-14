@@ -82,3 +82,41 @@ export async function listCampaigns(userId: string, organizationId: string) {
     orderBy: { updatedAt: "desc" }
   });
 }
+
+/**
+ * Elenco delle campagne dell'utente, attraverso tutte le organizzazioni di cui
+ * e' membro attivo. Serve alla pagina iniziale, che deve poter mostrare le
+ * campagne senza chiedere prima di scegliere un'organizzazione: il candidato
+ * singolo non sa di averne una.
+ */
+export async function listUserCampaigns(userId: string) {
+  const campaigns = await prisma.campaign.findMany({
+    where: { members: { some: { userId, status: MembershipStatus.ACTIVE } } },
+    select: {
+      id: true,
+      organizationId: true,
+      name: true,
+      electionType: true,
+      officeSought: true,
+      municipality: true,
+      province: true,
+      status: true,
+      territoryId: true,
+      setupCompletedAt: true,
+      mandataryRequirement: true,
+      updatedAt: true,
+      organization: { select: { name: true } },
+      setup: { select: { campaignId: true } },
+      candidateProfile: { select: { firstName: true, lastName: true } },
+      mandataryProfile: { select: { id: true } }
+    },
+    orderBy: { updatedAt: "desc" }
+  });
+
+  return campaigns.map((campaign) => ({
+    ...campaign,
+    hasTerritory: campaign.territoryId !== null,
+    hasSetup: campaign.setup !== null,
+    hasMandatary: campaign.mandataryProfile !== null
+  }));
+}
