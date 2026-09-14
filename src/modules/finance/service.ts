@@ -1,6 +1,7 @@
 import { ContributionStatus, ContributionType, ExpenseStatus, type Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { requireCampaignPermission } from "@/modules/access/service";
+import { requireWriteEntitlement } from "@/modules/billing/service";
 import { refreshMandataryRequirement } from "@/modules/campaigns/setup";
 
 type FinanceScope = { actorUserId: string; organizationId: string; campaignId: string };
@@ -22,6 +23,7 @@ export async function createContribution(
     scope.campaignId,
     "finance:write"
   );
+  await requireWriteEntitlement(scope.organizationId);
   const contribution = await prisma.$transaction(async (tx) => {
     const created = await tx.contribution.create({
       data: {
@@ -98,6 +100,7 @@ export async function createExpense(
     scope.campaignId,
     "finance:write"
   );
+  await requireWriteEntitlement(scope.organizationId);
   return prisma.$transaction(async (tx) => {
     const expense = await tx.expense.create({
       data: {

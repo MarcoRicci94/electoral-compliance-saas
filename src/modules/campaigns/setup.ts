@@ -2,6 +2,7 @@ import { CampaignStatus, MandataryRequirement, type Prisma } from "@prisma/clien
 import { prisma } from "@/lib/db";
 import { HttpError } from "@/lib/http";
 import { requireCampaignAccess, requireCampaignPermission } from "@/modules/access/service";
+import { requireWriteEntitlement } from "@/modules/billing/service";
 import { determineMandatary } from "@/modules/mandataries/determination";
 import { evaluateCampaign } from "@/modules/rules/service";
 
@@ -109,6 +110,7 @@ export async function saveCampaignSetup(
   answers: CampaignSetupAnswers
 ) {
   await requireCampaignPermission(actorUserId, organizationId, campaignId, "campaign:manage");
+  await requireWriteEntitlement(organizationId);
 
   /**
    * Se il candidato dichiara che spendera' denaro proprio, l'importo previsto

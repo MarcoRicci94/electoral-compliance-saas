@@ -22,7 +22,8 @@ const ids = {
   campaignId: "",
   territoryId: "",
   rulesetVersionId: "",
-  donorId: ""
+  donorId: "",
+  planId: ""
 };
 
 type SeedRule = {
@@ -142,6 +143,34 @@ beforeAll(async () => {
   ids.organizationId = organization.id;
   ids.campaignId = organization.campaigns[0]!.id;
 
+  /**
+   * L'organizzazione viene creata direttamente, quindi non passa dal servizio che
+   * apre la prova gratuita: senza abbonamento le scritture sarebbero rifiutate.
+   * Il fixture rappresenta un'organizzazione in prova, come quella di un utente
+   * appena registrato.
+   */
+  const plan = await prisma.plan.create({
+    data: {
+      code: `TEST-${suffix}`,
+      name: "Piano di prova",
+      description: "Piano usato dai test di integrazione.",
+      priceCents: 0,
+      interval: "CAMPAIGN",
+      campaignLimit: null,
+      isPublic: false,
+      sortOrder: 999
+    }
+  });
+  ids.planId = plan.id;
+  await prisma.subscription.create({
+    data: {
+      organizationId: organization.id,
+      planId: plan.id,
+      status: "TRIALING",
+      trialEndsAt: new Date(Date.now() + 30 * 86_400_000)
+    }
+  });
+
   const donor = await prisma.donor.create({
     data: { type: "INDIVIDUAL", firstName: "Amico", lastName: "Generoso" }
   });
@@ -149,7 +178,8 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  const { campaignId, organizationId, userId, rulesetVersionId, territoryId, donorId } = ids;
+  const { campaignId, organizationId, userId, rulesetVersionId, territoryId, donorId, planId } =
+    ids;
   if (campaignId) {
     await prisma.auditLog.deleteMany({ where: { campaignId } });
     await prisma.deadline.deleteMany({ where: { campaignId } });
@@ -163,9 +193,11 @@ afterAll(async () => {
   }
   if (organizationId) {
     await prisma.auditLog.deleteMany({ where: { organizationId } });
+    await prisma.subscription.deleteMany({ where: { organizationId } });
     await prisma.organizationMember.deleteMany({ where: { organizationId } });
     await prisma.organization.deleteMany({ where: { id: organizationId } });
   }
+  if (planId) await prisma.plan.deleteMany({ where: { id: planId } });
   if (donorId) await prisma.donor.deleteMany({ where: { id: donorId } });
   if (userId) await prisma.user.deleteMany({ where: { id: userId } });
   if (rulesetVersionId) await prisma.rulesetVersion.deleteMany({ where: { id: rulesetVersionId } });

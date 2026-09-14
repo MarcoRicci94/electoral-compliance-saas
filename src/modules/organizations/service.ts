@@ -1,6 +1,7 @@
 import { MembershipStatus, OrganizationType, type Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { requireOrganizationMember } from "@/modules/access/service";
+import { startTrial } from "@/modules/billing/service";
 
 type CreateOrganizationInput = { name: string; type: OrganizationType };
 
@@ -18,6 +19,7 @@ export async function createOrganization(userId: string, input: CreateOrganizati
         acceptedAt: new Date()
       }
     });
+    await startTrial(tx, organization.id, userId);
     await tx.auditLog.create({
       data: {
         organizationId: organization.id,

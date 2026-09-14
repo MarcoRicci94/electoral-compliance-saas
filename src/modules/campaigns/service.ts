@@ -1,6 +1,7 @@
 import { CampaignRole, MembershipStatus, type Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { requireCampaignAccess, requireOrganizationMember } from "@/modules/access/service";
+import { requireCampaignCreationEntitlement } from "@/modules/billing/service";
 
 export type CreateCampaignInput = {
   organizationId: string;
@@ -20,6 +21,7 @@ export type CreateCampaignInput = {
 
 export async function createCampaign(userId: string, input: CreateCampaignInput) {
   await requireOrganizationMember(userId, input.organizationId);
+  await requireCampaignCreationEntitlement(input.organizationId);
   return prisma.$transaction(async (tx) => {
     const campaign = await tx.campaign.create({
       data: {

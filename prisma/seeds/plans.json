@@ -1,0 +1,38 @@
+{
+  "note": "Listino iniziale. I prezzi sono una proposta di partenza e vanno confermati dal titolare prima di qualunque vendita. Il piano con sortOrder piu' basso e' quello con cui si apre la prova gratuita.",
+  "plans": [
+    {
+      "code": "CANDIDATO",
+      "name": "Candidato",
+      "description": "Una campagna elettorale. Mandatario, consulente e collaboratori possono accedere alla stessa pratica senza licenze aggiuntive.",
+      "priceCents": 29000,
+      "currency": "EUR",
+      "interval": "CAMPAIGN",
+      "campaignLimit": 1,
+      "isPublic": true,
+      "sortOrder": 10
+    },
+    {
+      "code": "CANDIDATO_PLUS",
+      "name": "Candidato più",
+      "description": "Per chi segue più candidature, ad esempio uno studio professionale o un coordinamento locale. Fino a cinque campagne attive.",
+      "priceCents": 99000,
+      "currency": "EUR",
+      "interval": "CAMPAIGN",
+      "campaignLimit": 5,
+      "isPublic": true,
+      "sortOrder": 20
+    },
+    {
+      "code": "INTERNO",
+      "name": "Interno",
+      "description": "Piano di servizio senza limiti, riservato agli account interni e alle prove. Non compare nel listino pubblico.",
+      "priceCents": 0,
+      "currency": "EUR",
+      "interval": "CAMPAIGN",
+      "campaignLimit": null,
+      "isPublic": false,
+      "sortOrder": 99
+    }
+  ]
+}

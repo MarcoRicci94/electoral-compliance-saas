@@ -124,26 +124,37 @@ Da fare:
 9. Assistente con citazione delle fonti e simulatore dell'operazione.
 10. OpenAPI, bulk onboarding ed export, MFA, osservabilità, hardening di sicurezza e staging.
 
-## Milestone 11 — commercializzazione: abbonamenti e back-office
+## Milestone 11 — commercializzazione: abbonamenti e back-office (parziale)
 
-Non presente nel Master Prompt originale, che assume l'esistenza di organizzazioni
-già create. Serve per vendere il prodotto.
+Fatto:
 
-- Pagina pubblica di presentazione e listino.
-- Registrazione self-service che crea utente, organizzazione e campagna.
-- `Plan`, `Subscription`, `SubscriptionEvent`: stato dell'abbonamento come fatto
-  autorevole nel database, aggiornato dai webhook del gestore dei pagamenti.
-- Controllo degli entitlement: cosa può fare un account senza abbonamento attivo.
-  I dati già inseriti restano leggibili ed esportabili anche dopo la scadenza.
-- Ruolo `PLATFORM_ADMIN`, separato dalle organizzazioni, con back-office: elenco
-  abbonati, stato dei pagamenti, supporto agli accessi.
-- Impersonificazione di supporto: consentita solo con motivazione, durata limitata,
-  traccia in `AuditLog` e visibilità all'utente interessato.
-- Verifica email, recupero password e sblocco account.
+- Pagina pubblica con presentazione e listino, registrazione self-service e
+  creazione implicita dell'organizzazione alla prima campagna.
+- `Plan`, `Subscription`, `SubscriptionEvent` con migration; listino caricabile da
+  `prisma/seeds/plans.json`.
+- Prova gratuita aperta alla creazione dell'organizzazione, idempotente.
+- Entitlement: lettura ed esportazione non si tolgono mai, in nessuno stato; un
+  pagamento non riuscito concede un margine prima di fermare la scrittura; il
+  limite di campagne del piano blocca l'apertura di nuove campagne senza bloccare
+  la registrazione su quelle esistenti. Applicati alle scritture finanziarie, al
+  questionario e all'apertura di campagne.
+- `applyProviderEvent`: applicazione idempotente degli eventi del fornitore di
+  pagamenti, per identificativo dell'evento.
+- Ruolo `PLATFORM_ADMIN` separato dalle organizzazioni, assegnabile solo da riga
+  di comando (`npm run admin:grant`), e back-office con elenco abbonati e stato.
 
-Sequenza consigliata: dopo il completamento della Milestone 3, così che il percorso
-"mi abbono → entro → completo l'onboarding → so se mi serve il mandatario" sia
-dimostrabile end-to-end prima di costruire il resto.
+Da fare:
+
+- Collegamento del fornitore di pagamenti. Lo stato autorevole e i webhook
+  idempotenti ci sono gia'; mancano l'adattatore, le chiavi e la pagina di
+  pagamento. Richiede un account del fornitore.
+- Verifica dell'indirizzo email, recupero password e autenticazione a due
+  fattori: oggi la registrazione crea un account immediatamente utilizzabile.
+- Esportazione dei dati: gli entitlement la garantiscono sempre, ma la funzione
+  non esiste ancora. Finche' manca, la garanzia e' solo dichiarata.
+- Impersonificazione di supporto, volutamente non costruita a meta': richiede
+  motivazione, durata limitata, traccia nel registro e visibilita' all'utente.
+- Pagina di gestione dell'abbonamento lato cliente.
 
 ## Decisioni bloccanti
 

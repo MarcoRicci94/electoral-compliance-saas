@@ -23,6 +23,8 @@
     "db:seed:development": "node scripts/seed-development.mjs",
     "db:seed:rulesets": "node scripts/seed-rulesets.mjs",
     "db:seed:territories": "node scripts/seed-territories.mjs",
+    "db:seed:plans": "node scripts/seed-plans.mjs",
+    "admin:grant": "node scripts/grant-platform-role.mjs",
     "test:watch": "vitest --project unit --project rules"
   },
   "dependencies": {

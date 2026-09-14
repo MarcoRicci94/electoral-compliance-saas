@@ -3,12 +3,32 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
   // Connessione con pool per l'applicazione.
   url       = env("DATABASE_URL")
   // Connessione diretta per le migration: il pooler in modalita' transazione
   // non regge le istruzioni DDL che Prisma esegue durante una migrazione.
   directUrl = env("DIRECT_URL")
+}
+
+enum PlatformRole {
+  NONE
+  SUPPORT
+  ADMIN
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  EXPIRED
+}
+
+enum BillingInterval {
+  MONTH
+  YEAR
+  CAMPAIGN
 }
 
 enum UserStatus {
@@ -182,6 +202,65 @@ enum AllocationType {
   SHARE
 }
 
+model Plan {
+  id            String          @id @default(cuid())
+  code          String          @unique
+  name          String
+  description   String
+  priceCents    Int             @map("price_cents")
+  currency      String          @default("EUR")
+  interval      BillingInterval
+  /// Numero massimo di campagne attive. `null` significa nessun limite.
+  campaignLimit Int?            @map("campaign_limit")
+  isPublic      Boolean         @default(true) @map("is_public")
+  isActive      Boolean         @default(true) @map("is_active")
+  sortOrder     Int             @default(0) @map("sort_order")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+  subscriptions Subscription[]
+
+  @@map("plans")
+}
+
+model Subscription {
+  id                     String              @id @default(cuid())
+  organizationId         String              @unique @map("organization_id")
+  planId                 String              @map("plan_id")
+  status                 SubscriptionStatus  @default(TRIALING)
+  /// Fornitore dei pagamenti. `NONE` finche' l'incasso non e' collegato.
+  provider               String              @default("NONE")
+  providerCustomerId     String?             @map("provider_customer_id")
+  providerSubscriptionId String?             @unique @map("provider_subscription_id")
+  startedAt              DateTime            @default(now()) @map("started_at")
+  trialEndsAt            DateTime?           @map("trial_ends_at")
+  currentPeriodEnd       DateTime?           @map("current_period_end")
+  cancelAtPeriodEnd      Boolean             @default(false) @map("cancel_at_period_end")
+  canceledAt             DateTime?           @map("canceled_at")
+  createdAt              DateTime            @default(now()) @map("created_at")
+  updatedAt              DateTime            @updatedAt @map("updated_at")
+  organization           Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  plan                   Plan                @relation(fields: [planId], references: [id], onDelete: Restrict)
+  events                 SubscriptionEvent[]
+
+  @@index([status, currentPeriodEnd])
+  @@map("subscriptions")
+}
+
+model SubscriptionEvent {
+  id              String       @id @default(cuid())
+  subscriptionId  String       @map("subscription_id")
+  type            String
+  /// Identificativo dell'evento presso il fornitore: rende i webhook idempotenti.
+  providerEventId String?      @unique @map("provider_event_id")
+  payloadJson     Json?        @map("payload_json")
+  occurredAt      DateTime     @map("occurred_at")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  subscription    Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([subscriptionId, occurredAt])
+  @@map("subscription_events")
+}
+
 model User {
   id                      String               @id @default(cuid())
   email                   String               @unique
@@ -192,6 +271,7 @@ model User {
   status                  UserStatus           @default(ACTIVE)
   emailVerifiedAt         DateTime?            @map("email_verified_at")
   mfaEnabled              Boolean              @default(false) @map("mfa_enabled")
+  platformRole            PlatformRole         @default(NONE) @map("platform_role")
   createdAt               DateTime             @default(now()) @map("created_at")
   updatedAt               DateTime             @updatedAt @map("updated_at")
   lastLoginAt             DateTime?            @map("last_login_at")
@@ -217,6 +297,7 @@ model Organization {
   members       OrganizationMember[]
   campaigns     Campaign[]
   auditEvents   AuditLog[]
+  subscription  Subscription?
 
   @@index([ownerUserId])
   @@map("organizations")
