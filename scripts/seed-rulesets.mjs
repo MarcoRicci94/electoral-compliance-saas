@@ -77,12 +77,14 @@ for (const ruleset of seed.rulesets) {
       where: {
         rulesetVersionId_code: { rulesetVersionId: version.id, code: parameter.code }
       },
-      update: { value: parameter.value, unit: parameter.unit ?? null },
+      // Mai marcato come verificato da uno script: la verifica e' un atto di una persona.
+      update: { value: parameter.value, unit: parameter.unit ?? null, note: parameter.note ?? null },
       create: {
         rulesetVersionId: version.id,
         code: parameter.code,
         value: parameter.value,
         unit: parameter.unit ?? null,
+        note: parameter.note ?? null,
         legalSourceId: sourceIdByKey.get(parameter.legalSourceKey) ?? null
       }
     });

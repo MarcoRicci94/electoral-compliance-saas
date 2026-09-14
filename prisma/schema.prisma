@@ -661,6 +661,13 @@ model RuleParameter {
   code             String
   value            Json
   unit             String?
+  /// Che cosa rappresenta il valore e da dove viene. Mostrata a chi lo rivede.
+  note             String?
+  /// Valorizzati quando una persona ha controllato il numero sulla fonte
+  /// ufficiale. Modificare il valore azzera la verifica: un numero cambiato non
+  /// e' piu' il numero che era stato controllato.
+  verifiedAt       DateTime?      @map("verified_at")
+  verifiedBy       String?        @map("verified_by")
   legalSourceId    String?        @map("legal_source_id")
   rulesetVersion   RulesetVersion @relation(fields: [rulesetVersionId], references: [id], onDelete: Cascade)
 

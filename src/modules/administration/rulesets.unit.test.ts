@@ -13,8 +13,20 @@ const rule = (overrides: Partial<Parameters<typeof checkActivationReadiness>[0][
   ...overrides
 });
 
-const check = (rules: Parameters<typeof checkActivationReadiness>[0], parameters: string[] = []) =>
-  checkActivationReadiness(rules, new Set(parameters));
+/** Per comodita': un parametro passato come stringa e' numerico e gia' verificato. */
+const parameter = (input: string | { code: string; value?: string; verifiedAt?: Date | null }) =>
+  typeof input === "string"
+    ? { code: input, value: "1000", verifiedAt: new Date("2027-01-01") }
+    : {
+        code: input.code,
+        value: input.value ?? "1000",
+        verifiedAt: input.verifiedAt === undefined ? new Date("2027-01-01") : input.verifiedAt
+      };
+
+const check = (
+  rules: Parameters<typeof checkActivationReadiness>[0],
+  parameters: (string | { code: string; value?: string; verifiedAt?: Date | null })[] = []
+) => checkActivationReadiness(rules, parameters.map(parameter));
 
 describe("una regola senza fonte verificata non si attiva", () => {
   it("accetta una regola completa e collegata a una fonte verificata", () => {
@@ -134,5 +146,58 @@ describe("gli impedimenti si raccolgono tutti", () => {
       expect.arrayContaining(["A", "B"])
     );
     expect(result.blockers.some((blocker) => blocker.ruleCode === "C")).toBe(false);
+  });
+});
+
+describe("i numeri da cui esce un limite di spesa", () => {
+  const limitRule = rule({
+    ruleCode: "IT-LIMIT-002",
+    effectType: "CALCULATION",
+    effectPayload: {
+      code: "SPENDING_LIMIT",
+      label: "Limite",
+      expression: { operation: "add", items: [{ constant: "fissa" }, { constant: "perElettore" }] }
+    }
+  });
+
+  it("accetta parametri numerici e verificati", () => {
+    expect(check([limitRule], ["fissa", "perElettore"]).ready).toBe(true);
+  });
+
+  /**
+   * Un valore che il motore non sa leggere non si manifesta all'attivazione: si
+   * manifesta quando un candidato apre la campagna e il limite risulta non
+   * calcolabile.
+   */
+  it("blocca un parametro che non contiene un numero", () => {
+    const result = check([limitRule], [{ code: "fissa", value: "venticinquemila" }, "perElettore"]);
+    expect(result.ready).toBe(false);
+    expect(result.blockers[0]).toMatchObject({ code: "PARAMETER_NOT_NUMERIC" });
+  });
+
+  it("accetta i decimali con il punto e i valori negativi", () => {
+    expect(check([limitRule], [{ code: "fissa", value: "0.05" }, "perElettore"]).ready).toBe(true);
+    expect(check([limitRule], [{ code: "fissa", value: "-3" }, "perElettore"]).ready).toBe(true);
+  });
+
+  it("blocca un parametro che nessuno ha verificato", () => {
+    const result = check([limitRule], [{ code: "fissa", verifiedAt: null }, "perElettore"]);
+    expect(result.ready).toBe(false);
+    expect(result.blockers[0]).toMatchObject({
+      code: "UNVERIFIED_PARAMETER",
+      ruleCode: "IT-LIMIT-002"
+    });
+  });
+
+  /**
+   * Solo i parametri effettivamente citati da una regola attiva: uno inutilizzato
+   * non ha motivo di bloccare l'attivazione.
+   */
+  it("ignora i parametri che nessuna regola attiva usa", () => {
+    const result = check(
+      [limitRule],
+      ["fissa", "perElettore", { code: "inutilizzato", value: "boh", verifiedAt: null }]
+    );
+    expect(result.ready).toBe(true);
   });
 });

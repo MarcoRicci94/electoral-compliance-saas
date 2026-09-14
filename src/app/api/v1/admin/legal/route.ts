@@ -3,7 +3,9 @@ import { errorResponse } from "@/lib/http";
 import {
   activateRuleset,
   setRuleActive,
-  verifyLegalSource
+  updateRuleParameter,
+  verifyLegalSource,
+  verifyRuleParameter
 } from "@/modules/administration/rulesets";
 import { requireSession } from "@/modules/auth/require-session";
 
@@ -18,6 +20,18 @@ const schema = z.discriminatedUnion("action", [
     action: z.literal("SET_RULE_ACTIVE"),
     ruleId: z.string().cuid(),
     isActive: z.boolean()
+  }),
+  z.object({
+    action: z.literal("UPDATE_PARAMETER"),
+    parameterId: z.string().cuid(),
+    value: z.string().min(1).max(40),
+    unit: z.string().max(40).optional(),
+    note: z.string().max(2000).optional()
+  }),
+  z.object({
+    action: z.literal("VERIFY_PARAMETER"),
+    parameterId: z.string().cuid(),
+    note: z.string().max(2000).optional()
   }),
   z.object({
     action: z.literal("ACTIVATE_RULESET"),
@@ -43,6 +57,20 @@ export async function POST(request: Request) {
     if (input.action === "SET_RULE_ACTIVE")
       return Response.json({
         data: await setRuleActive(session.userId, input.ruleId, input.isActive)
+      });
+
+    if (input.action === "UPDATE_PARAMETER")
+      return Response.json({
+        data: await updateRuleParameter(session.userId, input.parameterId, {
+          value: input.value,
+          unit: input.unit,
+          note: input.note
+        })
+      });
+
+    if (input.action === "VERIFY_PARAMETER")
+      return Response.json({
+        data: await verifyRuleParameter(session.userId, input.parameterId, input.note)
       });
 
     return Response.json({

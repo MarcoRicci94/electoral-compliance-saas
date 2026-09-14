@@ -62,12 +62,27 @@ function citedParameters(expression: unknown): string[] {
   return cited;
 }
 
+export type ParameterForCheck = {
+  code: string;
+  value: Prisma.JsonValue;
+  verifiedAt: Date | null;
+};
+
+const numericValue = /^-?\d+(\.\d+)?$/;
+
+/** Un parametro e' utilizzabile solo se il motore di calcolo sa leggerlo. */
+function parameterIsNumeric(value: Prisma.JsonValue): boolean {
+  if (typeof value === "number") return Number.isFinite(value);
+  return typeof value === "string" && numericValue.test(value.trim());
+}
+
 export function checkActivationReadiness(
   rules: RuleForCheck[],
-  parameterCodes: Set<string>
+  parameters: ParameterForCheck[]
 ): ActivationReadiness {
   const blockers: ActivationBlocker[] = [];
   const active = rules.filter((rule) => rule.isActive);
+  const byCode = new Map(parameters.map((parameter) => [parameter.code, parameter]));
 
   if (active.length === 0)
     blockers.push({
@@ -118,13 +133,39 @@ export function checkActivationReadiness(
       } else {
         const effect = parseCalculationEffect(rule.effectPayload, rule.ruleCode);
         const expression = calculationExpressionSchema.parse(effect.expression);
-        for (const code of citedParameters(expression))
-          if (!parameterCodes.has(code))
+        for (const code of citedParameters(expression)) {
+          const parameter = byCode.get(code);
+          if (!parameter) {
             blockers.push({
               code: "MISSING_PARAMETER",
               ruleCode: rule.ruleCode,
               message: `Il calcolo cita il parametro "${code}", che non e' versionato in questo ruleset.`
             });
+            continue;
+          }
+          /**
+           * Un valore che il motore non sa leggere non si manifesta all'attivazione:
+           * si manifesta quando un candidato apre la propria campagna e il limite
+           * di spesa risulta non calcolabile.
+           */
+          if (!parameterIsNumeric(parameter.value))
+            blockers.push({
+              code: "PARAMETER_NOT_NUMERIC",
+              ruleCode: rule.ruleCode,
+              message: `Il parametro "${code}" non contiene un numero: ${JSON.stringify(parameter.value)}.`
+            });
+          /**
+           * E' il numero da cui esce il limite di spesa di una persona reale:
+           * nessuno deve poterlo attivare senza che qualcuno lo abbia
+           * controllato sulla fonte.
+           */
+          if (!parameter.verifiedAt)
+            blockers.push({
+              code: "UNVERIFIED_PARAMETER",
+              ruleCode: rule.ruleCode,
+              message: `Il parametro "${code}" non risulta verificato da nessuno.`
+            });
+        }
       }
     } catch (error) {
       blockers.push({
@@ -163,10 +204,7 @@ export async function getRuleset(actorUserId: string, rulesetVersionId: string) 
   });
   if (!ruleset) throw new HttpError(404, "RULESET_NOT_FOUND", "Ruleset non trovato");
 
-  const readiness = checkActivationReadiness(
-    ruleset.rules,
-    new Set(ruleset.parameters.map((parameter) => parameter.code))
-  );
+  const readiness = checkActivationReadiness(ruleset.rules, ruleset.parameters);
   return { ruleset, readiness };
 }
 
@@ -341,5 +379,111 @@ export async function activateRuleset(
     );
 
     return { activated, supersededCount: superseded.count };
+  });
+}
+
+async function loadEditableParameter(parameterId: string) {
+  const parameter = await prisma.ruleParameter.findUnique({
+    where: { id: parameterId },
+    include: { rulesetVersion: { select: { id: true, name: true, status: true } } }
+  });
+  if (!parameter) throw new HttpError(404, "PARAMETER_NOT_FOUND", "Parametro non trovato");
+  if (parameter.rulesetVersion.status === RulesetStatus.ACTIVE)
+    throw new HttpError(
+      409,
+      "RULESET_ALREADY_ACTIVE",
+      `Il ruleset "${parameter.rulesetVersion.name}" e' attivo: per cambiare un parametro crea una nuova versione.`
+    );
+  return parameter;
+}
+
+/**
+ * Corregge il valore di un parametro.
+ *
+ * Il cambiamento azzera la verifica: il numero controllato non e' piu' quello
+ * scritto, quindi la responsabilita' che qualcuno si era assunto non copre il
+ * valore nuovo. Va verificato di nuovo, e questo e' voluto.
+ */
+export async function updateRuleParameter(
+  actorUserId: string,
+  parameterId: string,
+  input: { value: string; unit?: string; note?: string }
+) {
+  await requirePlatformRole(actorUserId, PlatformRole.ADMIN);
+  const parameter = await loadEditableParameter(parameterId);
+
+  const value = input.value.trim();
+  if (!/^-?\d+(\.\d+)?$/.test(value))
+    throw new HttpError(
+      422,
+      "PARAMETER_NOT_NUMERIC",
+      "Il valore deve essere un numero, con il punto come separatore decimale. Esempio: 25000 oppure 0.05"
+    );
+
+  const valueChanged = value !== String(parameter.value);
+
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.ruleParameter.update({
+      where: { id: parameterId },
+      data: {
+        value,
+        unit: input.unit?.trim() || parameter.unit,
+        note: input.note?.trim() || parameter.note,
+        ...(valueChanged ? { verifiedAt: null, verifiedBy: null } : {})
+      }
+    });
+    await recordPlatformAudit(
+      tx,
+      actorUserId,
+      "RULE_PARAMETER_UPDATED",
+      "RuleParameter",
+      parameterId,
+      {
+        code: parameter.code,
+        value: parameter.value,
+        verifiedAt: parameter.verifiedAt?.toISOString() ?? null
+      } as Prisma.InputJsonValue,
+      {
+        code: updated.code,
+        value: updated.value,
+        unit: updated.unit,
+        note: updated.note,
+        verificationCleared: valueChanged
+      } as Prisma.InputJsonValue
+    );
+    return updated;
+  });
+}
+
+/**
+ * Marca un parametro come verificato. E' l'atto con cui una persona dichiara di
+ * aver letto quel numero sulla fonte ufficiale: senza, nessuna regola di calcolo
+ * che lo cita puo' essere attivata.
+ */
+export async function verifyRuleParameter(actorUserId: string, parameterId: string, note?: string) {
+  await requirePlatformRole(actorUserId, PlatformRole.ADMIN);
+  const parameter = await loadEditableParameter(parameterId);
+  const verifiedAt = new Date();
+
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.ruleParameter.update({
+      where: { id: parameterId },
+      data: { verifiedAt, verifiedBy: actorUserId, note: note?.trim() || parameter.note }
+    });
+    await recordPlatformAudit(
+      tx,
+      actorUserId,
+      "RULE_PARAMETER_VERIFIED",
+      "RuleParameter",
+      parameterId,
+      { verifiedAt: parameter.verifiedAt?.toISOString() ?? null } as Prisma.InputJsonValue,
+      {
+        code: updated.code,
+        value: updated.value,
+        verifiedAt: verifiedAt.toISOString(),
+        note: updated.note
+      } as Prisma.InputJsonValue
+    );
+    return updated;
   });
 }

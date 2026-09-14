@@ -175,10 +175,16 @@ Da fare:
 - Verifica delle fonti normative: registra autore, data e link al testo ufficiale.
 - Attivazione delle singole regole e dell'intero ruleset, riservata al ruolo
   `PLATFORM_ADMIN`.
+- Correzione dei parametri dalla console, con nota e unita' di misura. Il valore
+  deve essere un numero leggibile dal motore di calcolo; modificarne uno gia'
+  verificato azzera la verifica, perche' il numero cambiato non e' piu' quello
+  che qualcuno aveva controllato.
+- Verifica dei singoli parametri, con autore e data.
 - Controlli di attivazione: almeno una regola attiva, ogni regola attiva collegata
   a una fonte verificata da una persona, condizioni valide per il motore, effetti
   completi, termini delle scadenze analizzabili, parametri citati dai calcoli
-  presenti nel ruleset. La nota di revisione e' obbligatoria e resta agli atti.
+  presenti nel ruleset, numerici e verificati. La nota di revisione e'
+  obbligatoria e resta agli atti.
 - Un ruleset attivo non e' piu' modificabile: per cambiarlo si crea una nuova
   versione, e quella precedente viene marcata come superata.
 

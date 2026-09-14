@@ -44,9 +44,12 @@ export default async function RulesetDetailPage({ params }: { params: Promise<{ 
       <div className="max-w-4xl">
         <RulesetConsole
           parameters={ruleset.parameters.map((parameter) => ({
+            id: parameter.id,
             code: parameter.code,
             value: JSON.stringify(parameter.value).replace(/^"|"$/g, ""),
-            unit: parameter.unit
+            unit: parameter.unit,
+            note: parameter.note,
+            verifiedAt: parameter.verifiedAt?.toISOString() ?? null
           }))}
           readiness={readiness}
           rules={ruleset.rules.map((rule) => ({

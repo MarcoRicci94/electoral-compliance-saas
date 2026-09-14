@@ -6,7 +6,9 @@ import {
   activateRuleset,
   getRuleset,
   setRuleActive,
-  verifyLegalSource
+  updateRuleParameter,
+  verifyLegalSource,
+  verifyRuleParameter
 } from "@/modules/administration/rulesets";
 
 /**
@@ -24,7 +26,8 @@ const ids = {
   sourceId: "",
   systemSourceId: "",
   ruleId: "",
-  systemRuleId: ""
+  systemRuleId: "",
+  parameterId: ""
 };
 
 beforeAll(async () => {
@@ -70,7 +73,9 @@ beforeAll(async () => {
       version: "v1",
       effectiveFrom: new Date("2026-01-01"),
       status: "DRAFT",
-      parameters: { create: [{ code: "sogliaDemografica", value: "15000" }] },
+      parameters: {
+        create: [{ code: "sogliaDemografica", value: "15000", note: "Valore non verificato." }]
+      },
       rules: {
         create: [
           {
@@ -104,9 +109,10 @@ beforeAll(async () => {
         ]
       }
     },
-    include: { rules: true }
+    include: { rules: true, parameters: true }
   });
   ids.rulesetId = ruleset.id;
+  ids.parameterId = ruleset.parameters[0]!.id;
   ids.ruleId = ruleset.rules.find((rule) => rule.ruleCode === "TEST-SCOPE-001")!.id;
   ids.systemRuleId = ruleset.rules.find((rule) => rule.ruleCode === "TEST-SYS-001")!.id;
 });
@@ -186,6 +192,75 @@ describe("l'attivazione richiede fonti verificate", () => {
     expect(entry?.userId).toBe(ids.adminId);
     /** Le azioni di piattaforma non appartengono a nessuna organizzazione. */
     expect(entry?.organizationId).toBeNull();
+  });
+});
+
+describe("correzione e verifica dei parametri", () => {
+  it("solo un amministratore di piattaforma puo' correggerli o verificarli", async () => {
+    await expect(
+      updateRuleParameter(ids.outsiderId, ids.parameterId, { value: "1" })
+    ).rejects.toMatchObject({ code: "PLATFORM_ACCESS_DENIED" });
+    await expect(verifyRuleParameter(ids.outsiderId, ids.parameterId)).rejects.toMatchObject({
+      code: "PLATFORM_ACCESS_DENIED"
+    });
+  });
+
+  it("rifiuta un valore che non e' un numero", async () => {
+    // Compresa la forma italiana con la virgola: il motore di calcolo non la legge.
+    for (const value of ["quindicimila", "15.000,50", "15 000", "", "1e5"])
+      await expect(
+        updateRuleParameter(ids.adminId, ids.parameterId, { value }),
+        `valore rifiutato: ${JSON.stringify(value)}`
+      ).rejects.toMatchObject({ code: "PARAMETER_NOT_NUMERIC" });
+  });
+
+  it("accetta interi, decimali col punto e negativi", async () => {
+    for (const value of ["15000", "0.05", "-3", "  2500  "]) {
+      const updated = await updateRuleParameter(ids.adminId, ids.parameterId, { value });
+      expect(updated.value).toBe(value.trim());
+    }
+    await updateRuleParameter(ids.adminId, ids.parameterId, { value: "15000" });
+  });
+
+  it("salva un valore corretto con la sua nota e lascia traccia del vecchio", async () => {
+    const updated = await updateRuleParameter(ids.adminId, ids.parameterId, {
+      value: "15001.50",
+      unit: "abitanti",
+      note: "Art. 13 L. 96/2012, testo vigente."
+    });
+    expect(updated.value).toBe("15001.50");
+    expect(updated.note).toBe("Art. 13 L. 96/2012, testo vigente.");
+
+    const entry = await prisma.auditLog.findFirst({
+      where: { action: "RULE_PARAMETER_UPDATED", entityId: ids.parameterId },
+      orderBy: { createdAt: "desc" }
+    });
+    expect(entry?.beforeJson).toMatchObject({ value: "15000" });
+    expect(entry?.afterJson).toMatchObject({ value: "15001.50" });
+  });
+
+  /**
+   * Il punto della schermata: un numero cambiato non e' piu' il numero che
+   * qualcuno aveva controllato, quindi la verifica precedente non lo copre.
+   */
+  it("correggere un valore gia' verificato azzera la verifica", async () => {
+    const verified = await verifyRuleParameter(ids.adminId, ids.parameterId, "Letto in Gazzetta.");
+    expect(verified.verifiedAt).toBeInstanceOf(Date);
+    expect(verified.verifiedBy).toBe(ids.adminId);
+
+    const changed = await updateRuleParameter(ids.adminId, ids.parameterId, { value: "15000" });
+    expect(changed.verifiedAt).toBeNull();
+    expect(changed.verifiedBy).toBeNull();
+  });
+
+  it("risalvare lo stesso valore non azzera la verifica", async () => {
+    await verifyRuleParameter(ids.adminId, ids.parameterId);
+    const resaved = await updateRuleParameter(ids.adminId, ids.parameterId, {
+      value: "15000",
+      note: "Nota aggiornata senza toccare il numero."
+    });
+    expect(resaved.verifiedAt).toBeInstanceOf(Date);
+    expect(resaved.note).toBe("Nota aggiornata senza toccare il numero.");
   });
 });
 

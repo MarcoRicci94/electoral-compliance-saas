@@ -23,13 +23,22 @@ type Rule = {
   source: Source | null;
 };
 
+type Parameter = {
+  id: string;
+  code: string;
+  value: string;
+  unit: string | null;
+  note: string | null;
+  verifiedAt: string | null;
+};
+
 type Blocker = { code: string; ruleCode?: string; message: string };
 
 type Props = {
   rulesetId: string;
   status: string;
   rules: Rule[];
-  parameters: { code: string; value: string; unit: string | null }[];
+  parameters: Parameter[];
   readiness: { ready: boolean; activeRuleCount: number; blockers: Blocker[] };
 };
 
@@ -62,16 +71,23 @@ export function RulesetConsole({ rulesetId, status, rules, parameters, readiness
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [verifying, setVerifying] = useState<Source | null>(null);
+  const [editing, setEditing] = useState<string | null>(null);
   const locked = status === "ACTIVE" || status === "SUPERSEDED" || status === "ARCHIVED";
 
-  async function run(key: string, body: unknown) {
+  /**
+   * Restituisce l'esito: i moduli si chiudono solo se l'operazione e' riuscita,
+   * altrimenti quanto scritto andrebbe perso proprio mentre compare l'errore.
+   */
+  async function run(key: string, body: unknown): Promise<boolean> {
     setError("");
     setBusy(key);
     try {
       await call(body);
       router.refresh();
+      return true;
     } catch (problem) {
       setError((problem as Error).message);
+      return false;
     } finally {
       setBusy("");
     }
@@ -82,13 +98,26 @@ export function RulesetConsole({ rulesetId, status, rules, parameters, readiness
     if (!verifying) return;
     const form = new FormData(event.currentTarget);
     const officialUrl = String(form.get("officialUrl") ?? "").trim();
-    await run(`source-${verifying.id}`, {
+    const saved = await run(`source-${verifying.id}`, {
       action: "VERIFY_SOURCE",
       legalSourceId: verifying.id,
       officialUrl: officialUrl || undefined,
       notes: String(form.get("notes") ?? "").trim() || undefined
     });
-    setVerifying(null);
+    if (saved) setVerifying(null);
+  }
+
+  async function saveParameter(event: FormEvent<HTMLFormElement>, parameter: Parameter) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const saved = await run(`parameter-${parameter.id}`, {
+      action: "UPDATE_PARAMETER",
+      parameterId: parameter.id,
+      value: String(form.get("value") ?? "").trim(),
+      unit: String(form.get("unit") ?? "").trim() || undefined,
+      note: String(form.get("note") ?? "").trim() || undefined
+    });
+    if (saved) setEditing(null);
   }
 
   async function activate(event: FormEvent<HTMLFormElement>) {
@@ -252,17 +281,132 @@ export function RulesetConsole({ rulesetId, status, rules, parameters, readiness
 
       <section className="rounded-xl border bg-white p-6">
         <h2 className="text-lg font-semibold">Parametri ({parameters.length})</h2>
-        <table className="mt-4 w-full text-left text-sm">
-          <tbody className="divide-y">
-            {parameters.map((parameter) => (
-              <tr key={parameter.code}>
-                <td className="py-2 font-mono text-xs">{parameter.code}</td>
-                <td className="py-2">{parameter.value}</td>
-                <td className="py-2 text-slate-500">{parameter.unit ?? ""}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <p className="mt-1 text-sm text-slate-600">
+          Sono i numeri da cui escono i limiti di spesa e le soglie. Puoi correggerli e poi
+          verificarli: un calcolo non si attiva se cita un parametro che nessuno ha controllato.
+          Modificare un valore gia&apos; verificato azzera la verifica, perche&apos; il numero
+          controllato non e&apos; piu&apos; quello scritto.
+        </p>
+
+        <ul className="mt-5 divide-y">
+          {parameters.map((parameter) => (
+            <li className="py-4" key={parameter.id}>
+              {editing === parameter.id ? (
+                <form
+                  className="space-y-3 rounded-lg border bg-slate-50 p-4"
+                  onSubmit={(event) => saveParameter(event, parameter)}
+                >
+                  <p className="font-mono text-xs text-slate-500">{parameter.code}</p>
+                  <div className="flex flex-wrap gap-3">
+                    <label className="text-sm font-medium">
+                      Valore
+                      <input
+                        autoFocus
+                        className="mt-1 block w-40 rounded border p-2"
+                        defaultValue={parameter.value}
+                        inputMode="decimal"
+                        name="value"
+                        required
+                      />
+                    </label>
+                    <label className="text-sm font-medium">
+                      Unita&apos;
+                      <input
+                        className="mt-1 block w-32 rounded border p-2"
+                        defaultValue={parameter.unit ?? ""}
+                        name="unit"
+                      />
+                    </label>
+                  </div>
+                  <label className="block text-sm font-medium">
+                    Nota
+                    <textarea
+                      className="mt-1 w-full rounded border p-2"
+                      defaultValue={parameter.note ?? ""}
+                      name="note"
+                      placeholder="Art. 13 co. 2 lett. a) L. 96/2012, testo vigente."
+                      rows={2}
+                    />
+                  </label>
+                  <p className="text-xs text-slate-500">
+                    Solo cifre, con il punto come separatore decimale: 25000 oppure 0.05
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      className="rounded bg-blue-800 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+                      disabled={busy !== ""}
+                      type="submit"
+                    >
+                      Salva
+                    </button>
+                    <button
+                      className="rounded border px-4 py-2 text-sm"
+                      onClick={() => setEditing(null)}
+                      type="button"
+                    >
+                      Annulla
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-mono text-xs text-slate-500">{parameter.code}</p>
+                    <p className="text-lg font-medium">
+                      {parameter.value}
+                      {parameter.unit && (
+                        <span className="ml-2 text-sm font-normal text-slate-500">
+                          {parameter.unit}
+                        </span>
+                      )}
+                    </p>
+                    {parameter.note && (
+                      <p className="mt-1 max-w-xl text-sm text-slate-600">{parameter.note}</p>
+                    )}
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    {parameter.verifiedAt ? (
+                      <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-900">
+                        Verificato il {new Date(parameter.verifiedAt).toLocaleDateString("it-IT")}
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-900">
+                        Da verificare
+                      </span>
+                    )}
+                    {!locked && (
+                      <>
+                        <button
+                          className="rounded border px-3 py-1 text-sm disabled:opacity-50"
+                          disabled={busy !== ""}
+                          onClick={() => setEditing(parameter.id)}
+                          type="button"
+                        >
+                          Correggi
+                        </button>
+                        {!parameter.verifiedAt && (
+                          <button
+                            className="rounded border px-3 py-1 text-sm disabled:opacity-50"
+                            disabled={busy !== ""}
+                            onClick={() =>
+                              run(`verify-${parameter.id}`, {
+                                action: "VERIFY_PARAMETER",
+                                parameterId: parameter.id
+                              })
+                            }
+                            type="button"
+                          >
+                            Verificato
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
       </section>
 
       {!locked && (
